@@ -19,11 +19,8 @@ First time when we run, we store all the open PRs in the data bag as
 }
 ```
 We store all the open PRs in this fashion. With this we can find if a PR has new commit and trigger a build accordingly. As soon as we schedule a build against a PR, we remove the `"PR_PENDING_$id"` from the data bag. When a PR is closed / no longer available we remove the `"PR_REVISON_$id"` key.
-We batch all the PRs and schedule them sequentially one after the other. After every build we look for any new changes across the PR.
+We batch all the PRs and schedule them sequentially one after the other. After every build we look for any new changes across the PRs.
 
 ### Questions
 - What happens when we trigger a version in the plugin history, but the corresponding PR is not available?
 - I know, using `data` bag as a state between triggers, is a huge hack. I'm not sure how will this affect in terms of DB Storage and query processing, for repos with large number of active PRs.
-
-## License
-http://www.apache.org/licenses/LICENSE-2.0
