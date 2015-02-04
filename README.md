@@ -9,11 +9,11 @@ This GoCD's SCM plugin polls the Github repository for any new Pull Requests and
 ## Under the hood
 Under the hood, we exploit the fact that custom "data" as part of the [latestRevision](http://www.go.cd/documentation/developer/writing_go_plugins/scm_material/version_1_0/latest_revision.html) message is available during [latestRevisionSince](http://www.go.cd/documentation/developer/writing_go_plugins/scm_material/version_1_0/latest_revisions_since.html) message as well.
 First time when we run, we store all the open PRs in the data bag as
-```json
+```
 {
-    data: {
-        "PR_PENDING_$id" -> true
-        "PR_REVISON_$id" -> Commit SHA for the PR
+    "data": {
+        "PR_PENDING_$id": true
+        "PR_REVISON_$id": "Commit SHA for the PR"
         ...
     }
 }
