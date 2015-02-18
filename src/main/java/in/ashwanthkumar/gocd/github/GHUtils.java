@@ -16,4 +16,8 @@ public class GHUtils {
     public static boolean isValidGHUrl(String url) {
         return url.startsWith("https://github.com/") || url.startsWith("git@github.com:");
     }
+
+    public static int prIdFrom(String diffUrl) {
+        return Integer.parseInt(diffUrl.substring(diffUrl.indexOf("/pull/") + 6, diffUrl.length() - 5));
+    }
 }

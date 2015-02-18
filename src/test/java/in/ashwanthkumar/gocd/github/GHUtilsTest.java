@@ -27,4 +27,12 @@ public class GHUtilsTest {
         assertFalse(GHUtils.isValidGHUrl("http://ashwanthkumar.in/"));
     }
 
+    @Test
+    public void shouldExtractPullRequestIdFromDiffUrl() {
+        assertThat(GHUtils.prIdFrom("https://github.com/phanan/htaccess/pull/13.diff"), is(13));
+        assertThat(GHUtils.prIdFrom("https://github.com/phanan/htaccess/pull/133.diff"), is(133));
+        assertThat(GHUtils.prIdFrom("https://github.com/phanan/htaccess/pull/1.diff"), is(1));
+    }
+
+
 }
