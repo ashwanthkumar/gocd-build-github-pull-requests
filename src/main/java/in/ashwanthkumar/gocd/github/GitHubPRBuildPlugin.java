@@ -171,8 +171,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             } else {
                 currentPR.scheduled();
                 Map<String, Object> revisionMap = getRevisionMap(revision, prStatuses, currentPR);
-                LOGGER.info("handleGetLatestRevision# - Found PR(" + currentPR.getId() + "), scheduling...");
-                LOGGER.info("handleGetLatestRevision# - Response sending across is " + JSONUtils.toJson(revisionMap));
+                LOGGER.info("Triggered build for PR#" + currentPR.getId() + " with head as " + currentPR.getLastHead());
                 return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
             }
         } catch (Throwable t) {
