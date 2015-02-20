@@ -34,7 +34,7 @@ password=thisaintapassword
   </scms>
 
   <piplines>
-    <pipeline name="Project-A-PullRequests">
+    <pipeline name="Project-A-PullRequests" template="Project-A-Build">
       <materials>
         <!-- Make sure the ref="..." value matches the one specified above -->
         <scm ref="34293182-33e4-4459-a686-276d70387dfb">
@@ -44,7 +44,6 @@ password=thisaintapassword
   </pipelines>
 </cruise>
 ```
-
 
 ## Under the hood
 Under the hood, we exploit the fact that custom "data" as part of the [latestRevision](http://www.go.cd/documentation/developer/writing_go_plugins/scm_material/version_1_0/latest_revision.html) message is available during [latestRevisionSince](http://www.go.cd/documentation/developer/writing_go_plugins/scm_material/version_1_0/latest_revisions_since.html) message as well.
@@ -68,8 +67,7 @@ First time when we run, we store all the open PRs in the data bag as
   }
 }
 ```
-We store all the open PRs in this fashion. With this we can find if a PR has new commit and trigger a build accordingly. As soon as we schedule a build against a PR, we set the `"alreadyScheduled"` flag for the PR to true. When a PR is closed / no longer available we remove that PR from the list completely.
-We batch all the PRs and schedule them sequentially one after the other. After every build we look for any new changes across all the PRs.
+We store all the open PRs in this fashion. With this we can find if a PR has new commit and trigger a build accordingly. As soon as we schedule a build against a PR, we set the `"alreadyScheduled"` flag for the PR to true. When a PR is closed / no longer available we remove that PR from the list completely. We batch all the PRs and schedule them sequentially one after the other. After every build we look for any new changes across all the PRs.
 
 ## To Dos
 - Clean up the code esp. the JSON SerDe part
