@@ -299,7 +299,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
         Map<String, String> customDataBag = Maps.<String, String>builder()
                 .put("activePullRequests", JSONUtils.toJson(prStatuses))
-                .put("currentPR", String.valueOf(currentPR.getId()))
+                .put("PR_ID", String.valueOf(currentPR.getId()))
                 .value();
         response.put("data", customDataBag);
         response.put("modifiedFiles", modifiedFilesMapList);
