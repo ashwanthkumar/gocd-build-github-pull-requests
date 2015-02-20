@@ -138,8 +138,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleGetLatestRevision(GoPluginApiRequest goPluginApiRequest) {
-        LOGGER.info("handleGetLatestRevision# - " + goPluginApiRequest.requestBody());
-        // Check for PRs here
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
         String url = configuration.get("url");
         String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
@@ -147,14 +145,18 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.warn("flyweight: " + flyweightFolder);
 
         try {
+            LOGGER.info(String.format("Connecting to Github for %s", url));
             GHRepository repository = GitHub.connect().getRepository(GHUtils.parseGithubUrl(url));
+            LOGGER.info("Github Connection succesful!");
+            LOGGER.info("Fetching PR information from " + repository.getFullName());
             List<PullRequestStatus> prStatuses = getPullRequestStatuses(repository);
-            LOGGER.info(String.format("There are %d active PRs for %s", prStatuses.size(), url));
+            LOGGER.info("Fetch successful.");
             PullRequestStatus currentPR = null;
-            if (prStatuses.size() > 0) currentPR = prStatuses.get(0);
-            if (currentPR == null) {
+            if (prStatuses.isEmpty()) {
                 LOGGER.info("handleGetLatestRevision# - No active PRs found. We're good");
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
+            } else {
+                currentPR = prStatuses.get(0);
             }
 
             JGitHelper jGit = new JGitHelper();
@@ -168,7 +170,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             } else {
                 currentPR.scheduled();
-                Map<String, Object> revisionMap = getRevisionMap(revision, prStatuses);
+                Map<String, Object> revisionMap = getRevisionMap(revision, prStatuses, currentPR);
                 LOGGER.info("handleGetLatestRevision# - Found PR(" + currentPR.getId() + "), scheduling...");
                 LOGGER.info("handleGetLatestRevision# - Response sending across is " + JSONUtils.toJson(revisionMap));
                 return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
@@ -225,7 +227,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 List<Map> revisions = new ArrayList<Map>();
                 newActivePullRequests.schedule(currentPR.getId());
                 for (Revision revisionObj : newerRevisions) {
-                    Map<String, Object> revisionMap = getRevisionMap(revisionObj, newActivePullRequests.getPullRequestStatuses());
+                    Map<String, Object> revisionMap = getRevisionMap(revisionObj, newActivePullRequests.getPullRequestStatuses(), currentPR);
                     revisions.add(revisionMap);
                 }
                 response.put("revisions", revisions);
@@ -284,7 +286,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    private Map<String, Object> getRevisionMap(Revision revision, Iterable<PullRequestStatus> prStatuses) {
+    private Map<String, Object> getRevisionMap(Revision revision, Iterable<PullRequestStatus> prStatuses, PullRequestStatus currentPR) {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("revision", revision.getRevision());
         response.put("timestamp", new SimpleDateFormat(DATE_PATTERN).format(revision.getTimestamp()));
@@ -296,7 +298,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             modifiedFileMap.put("action", modifiedFile.getAction());
             modifiedFilesMapList.add(modifiedFileMap);
         }
-        response.put("data", Maps.of("activePullRequests", JSONUtils.toJson(prStatuses)));
+        Map<String, String> customDataBag = Maps.<String, String>builder()
+                .put("activePullRequests", JSONUtils.toJson(prStatuses))
+                .put("currentPR", String.valueOf(currentPR.getId()))
+                .value();
+        response.put("data", customDataBag);
         response.put("modifiedFiles", modifiedFilesMapList);
         return response;
     }
