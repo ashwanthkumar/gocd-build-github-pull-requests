@@ -4,13 +4,19 @@ public class PullRequestStatus {
     private int id;
     private String ref;
     private String lastHead;
+    private String prBranch;
+    private String toBranch;
+    private String url;
     private boolean alreadyScheduled;
 
-    public PullRequestStatus(int id, String headSHA) {
+    public PullRequestStatus(int id, String headSHA, String prBranch, String toBranch, String url) {
         this.id = id;
         this.ref = String.format("refs/pull/%d/head", getId());
         this.lastHead = headSHA;
         this.alreadyScheduled = false;
+        this.prBranch = prBranch;
+        this.toBranch = toBranch;
+        this.url = url;
     }
 
     private PullRequestStatus() {
@@ -32,6 +38,18 @@ public class PullRequestStatus {
         return alreadyScheduled;
     }
 
+    public String getPrBranch() {
+        return prBranch;
+    }
+
+    public String getToBranch() {
+        return toBranch;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
     public PullRequestStatus scheduled() {
         this.alreadyScheduled = true;
         return this;
@@ -39,7 +57,7 @@ public class PullRequestStatus {
 
     public PullRequestStatus merge(PullRequestStatus newPRStatus) {
         if (lastHead.equalsIgnoreCase(newPRStatus.getLastHead())) return copy();
-        else return new PullRequestStatus(id, newPRStatus.getLastHead());
+        else return new PullRequestStatus(id, newPRStatus.getLastHead(), prBranch, toBranch, url);
     }
 
     public boolean hasChanged(String newLatestHead) {
@@ -47,10 +65,11 @@ public class PullRequestStatus {
     }
 
     private PullRequestStatus copy() {
-        PullRequestStatus pullRequestStatus = new PullRequestStatus(id, lastHead);
+        PullRequestStatus pullRequestStatus = new PullRequestStatus(id, lastHead, prBranch, toBranch, url);
         if (isAlreadyScheduled()) pullRequestStatus.scheduled();
         return pullRequestStatus;
     }
+
 
     @Override
     public String toString() {
@@ -58,6 +77,9 @@ public class PullRequestStatus {
                 "id=" + id +
                 ", ref='" + ref + '\'' +
                 ", lastHead='" + lastHead + '\'' +
+                ", prBranch='" + prBranch + '\'' +
+                ", toBranch='" + toBranch + '\'' +
+                ", url='" + url + '\'' +
                 ", alreadyScheduled=" + alreadyScheduled +
                 '}';
     }
@@ -72,7 +94,10 @@ public class PullRequestStatus {
         if (alreadyScheduled != that.alreadyScheduled) return false;
         if (id != that.id) return false;
         if (lastHead != null ? !lastHead.equals(that.lastHead) : that.lastHead != null) return false;
+        if (prBranch != null ? !prBranch.equals(that.prBranch) : that.prBranch != null) return false;
         if (ref != null ? !ref.equals(that.ref) : that.ref != null) return false;
+        if (toBranch != null ? !toBranch.equals(that.toBranch) : that.toBranch != null) return false;
+        if (url != null ? !url.equals(that.url) : that.url != null) return false;
 
         return true;
     }
@@ -82,6 +107,9 @@ public class PullRequestStatus {
         int result = id;
         result = 31 * result + (ref != null ? ref.hashCode() : 0);
         result = 31 * result + (lastHead != null ? lastHead.hashCode() : 0);
+        result = 31 * result + (prBranch != null ? prBranch.hashCode() : 0);
+        result = 31 * result + (toBranch != null ? toBranch.hashCode() : 0);
+        result = 31 * result + (url != null ? url.hashCode() : 0);
         result = 31 * result + (alreadyScheduled ? 1 : 0);
         return result;
     }

@@ -272,7 +272,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             @Override
             public PullRequestStatus apply(GHPullRequest input) {
                 int prID = GHUtils.prIdFrom(input.getDiffUrl().toString());
-                return new PullRequestStatus(prID, input.getHead().getSha());
+                return new PullRequestStatus(prID, input.getHead().getSha(), input.getBase().getLabel(), input.getHead().getLabel(), input.getHtmlUrl().toString());
             }
         });
     }
@@ -300,6 +300,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, String> customDataBag = Maps.<String, String>builder()
                 .put("activePullRequests", JSONUtils.toJson(prStatuses))
                 .put("PR_ID", String.valueOf(currentPR.getId()))
+                .put("PR_BRANCH", String.valueOf(currentPR.getPrBranch()))
+                .put("TARGET_BRANCH", String.valueOf(currentPR.getToBranch()))
+                .put("URL", String.valueOf(currentPR.getUrl()))
                 .value();
         response.put("data", customDataBag);
         response.put("modifiedFiles", modifiedFilesMapList);
