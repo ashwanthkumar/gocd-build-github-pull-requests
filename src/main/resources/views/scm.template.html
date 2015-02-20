@@ -1,0 +1,5 @@
+<div class="form_item_block">
+    <label>URL:<span class="asterisk">*</span></label>
+    <input type="text" ng-model="url" ng-required="true"/>
+    <span class="form_error" ng-show="GOINPUTNAME[url].$error.server">{{ GOINPUTNAME[url].$error.server }}</span>
+</div>

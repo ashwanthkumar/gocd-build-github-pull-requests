@@ -6,7 +6,7 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-public class SCMConfigJsonSerializerTest {
+public class SCMConfigSerDeTest {
     @Test
     public void shouldSerializeSCMConfigProperly() {
         SCMConfig scmConfig = new SCMConfig().name("URL").displayName("Github");

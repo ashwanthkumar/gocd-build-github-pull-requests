@@ -7,7 +7,7 @@ import in.ashwanthkumar.utils.collections.Maps;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-public class SCMConfigJsonSerializer implements JsonSerializer<SCMConfig>, JsonDeserializer<SCMConfig> {
+public class SCMConfigSerDe implements JsonSerializer<SCMConfig>, JsonDeserializer<SCMConfig> {
     @Override
     public JsonElement serialize(SCMConfig config, Type type, JsonSerializationContext serializer) {
         return serializer.serialize(Maps.of(config.getName(), config.props()));

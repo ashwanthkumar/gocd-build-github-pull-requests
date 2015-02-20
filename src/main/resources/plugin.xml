@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<go-plugin id="github" version="1">
+    <about>
+        <name>Github Pull Requests Builder</name>
+        <version>0.1</version>
+        <target-go-version>14.4.0</target-go-version>
+        <description>Plugin that polls a GitHub repository for pull requests and triggers a build for each of them</description>
+        <vendor>
+            <name>Ashwanth Kumar</name>
+            <url>https://github.com/ashwanthkumar/gocd-build-github-pull-requests</url>
+        </vendor>
+    </about>
+</go-plugin>

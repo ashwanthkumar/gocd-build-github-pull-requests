@@ -2,6 +2,10 @@ package in.ashwanthkumar.gocd.github.model;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * Messages used while SCM Configuration
+ * Ref - http://www.go.cd/documentation/developer/writing_go_plugins/scm_material/version_1_0/scm_configuration.html
+ */
 public class SCMConfig {
 
     private String name;

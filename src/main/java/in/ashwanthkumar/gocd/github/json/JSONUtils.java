@@ -1,16 +1,18 @@
 package in.ashwanthkumar.gocd.github.json;
 
 import com.google.gson.GsonBuilder;
+import in.ashwanthkumar.gocd.github.model.PullRequests;
 import in.ashwanthkumar.gocd.github.model.SCMConfig;
 
 import java.util.HashMap;
 
 public class JSONUtils {
     private final static GsonBuilder gsonBuilder = new GsonBuilder()
-            .registerTypeAdapter(SCMConfig.class, new SCMConfigJsonSerializer());
+            .registerTypeAdapter(SCMConfig.class, new SCMConfigSerDe())
+            .registerTypeAdapter(PullRequests.class, new PullRequestsSerDe());
 
     public static String toJson(Object anything) {
-        return gsonBuilder.create().toJson(anything);
+        return gsonBuilder.setPrettyPrinting().create().toJson(anything);
     }
 
     public static HashMap fromJsonAsMap(String json) {
