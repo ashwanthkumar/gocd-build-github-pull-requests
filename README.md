@@ -74,3 +74,4 @@ We store all the open PRs in this fashion. With this we can find if a PR has new
 - Clean up the code esp. the JSON SerDe part
 - Add proper tests around the plugin
 - Remove the dependency on Github API and instead use `+refs/pull/*/head:refs/gh-pull/remotes/origin/*` to fetch all the pull requests and check for revisions against them.
+- Add support for [Github's commit status](https://developer.github.com/v3/repos/statuses/) API to push build status to Github.
