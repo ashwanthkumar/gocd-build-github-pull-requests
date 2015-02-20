@@ -11,19 +11,24 @@ public class GHUtilsTest {
     public void shouldParseSSH() {
         assertThat(parseGithubUrl("git@github.com:ashwanthkumar/gocd-build-github-pull-requests.git"), is("ashwanthkumar/gocd-build-github-pull-requests"));
         assertThat(parseGithubUrl("git@github.com:ashwanthkumar/gocd-build-github-pull-requests"), is("ashwanthkumar/gocd-build-github-pull-requests"));
+        assertThat(parseGithubUrl("git@Github.Com:ashwanthkumar/gocd-build-github-pull-requests"), is("ashwanthkumar/gocd-build-github-pull-requests"));
     }
 
     @Test
     public void shouldParseHTTPS() {
         assertThat(parseGithubUrl("https://github.com/ashwanthkumar/gocd-build-github-pull-requests.git"), is("ashwanthkumar/gocd-build-github-pull-requests"));
         assertThat(parseGithubUrl("https://github.com/ashwanthkumar/gocd-build-github-pull-requests"), is("ashwanthkumar/gocd-build-github-pull-requests"));
+        assertThat(parseGithubUrl("https://Github.Com/ashwanthkumar/gocd-build-github-pull-requests"), is("ashwanthkumar/gocd-build-github-pull-requests"));
+        assertThat(parseGithubUrl("https://Github.Com/Ashwanthkumar/gocd-build-github-pull-requests"), is("ashwanthkumar/gocd-build-github-pull-requests"));
     }
 
     @Test
     public void shouldCheckForValidUrl() {
         assertTrue(GHUtils.isValidGHUrl("git@github.com:ashwanthkumar/gocd-build-github-pull-requests.git"));
+        assertTrue(GHUtils.isValidGHUrl("git@Github.com:ashwanthkumar/gocd-build-github-pull-requests.git"));
         assertTrue(GHUtils.isValidGHUrl("https://github.com/ashwanthkumar/gocd-build-github-pull-requests.git"));
         assertTrue(GHUtils.isValidGHUrl("https://github.com/ashwanthkumar/gocd-build-github-pull-requests"));
+        assertTrue(GHUtils.isValidGHUrl("https://Github.com/ashwanthkumar/gocd-build-github-pull-requests"));
         assertFalse(GHUtils.isValidGHUrl("http://ashwanthkumar.in/"));
     }
 
