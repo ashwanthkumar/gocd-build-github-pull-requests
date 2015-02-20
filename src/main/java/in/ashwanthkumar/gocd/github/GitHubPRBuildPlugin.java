@@ -33,8 +33,8 @@ import java.util.Map;
 import static java.util.Arrays.asList;
 
 @Extension
-public class GitPluginImpl implements GoPlugin {
-    private static Logger LOGGER = Logger.getLoggerFor(GitPluginImpl.class);
+public class GitHubPRBuildPlugin implements GoPlugin {
+    private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
 
     public static final String EXTENSION_NAME = "scm";
     private static final List<String> goSupportedVersions = asList("1.0");
@@ -239,7 +239,6 @@ public class GitPluginImpl implements GoPlugin {
     }
 
     private GoPluginApiResponse handleCheckout(GoPluginApiRequest goPluginApiRequest) {
-        LOGGER.info("Got checkout Message");
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
         String url = configuration.get("url");
         String destinationFolder = (String) getValueFor(goPluginApiRequest, "destination-folder");

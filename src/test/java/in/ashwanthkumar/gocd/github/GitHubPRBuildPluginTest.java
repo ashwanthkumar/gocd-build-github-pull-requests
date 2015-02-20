@@ -15,7 +15,7 @@ import java.util.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class GitPluginImplTest {
+public class GitHubPRBuildPluginTest {
     public static final String TEST_DIR = "/tmp/" + UUID.randomUUID();
 
     @Before
@@ -32,7 +32,7 @@ public class GitPluginImplTest {
     public void shouldHandleInvalidURLCorrectly_ValidationRequest() {
         Map request = createRequestMap(Arrays.asList(new Pair("url", "crap")));
 
-        GoPluginApiResponse response = new GitPluginImpl().handle(createGoPluginApiRequest(GitPluginImpl.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
+        GoPluginApiResponse response = new GitHubPRBuildPlugin().handle(createGoPluginApiRequest(GitHubPRBuildPlugin.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
 
         verifyResponse(response.responseBody(), Arrays.asList(new Pair("url", "Either url is empty / invalid.")));
     }
@@ -49,7 +49,7 @@ public class GitPluginImplTest {
     private void verifyValidationSuccess(String url) {
         Map request = createRequestMap(Arrays.asList(new Pair("url", url)));
 
-        GoPluginApiResponse response = new GitPluginImpl().handle(createGoPluginApiRequest(GitPluginImpl.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
+        GoPluginApiResponse response = new GitHubPRBuildPlugin().handle(createGoPluginApiRequest(GitHubPRBuildPlugin.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
 
         verifyResponse(response.responseBody(), null);
     }
