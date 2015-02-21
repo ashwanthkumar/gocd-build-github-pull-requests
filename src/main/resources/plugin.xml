@@ -3,7 +3,7 @@
     <about>
         <name>Github Pull Requests Builder</name>
         <version>0.1</version>
-        <target-go-version>14.4.0</target-go-version>
+        <target-go-version>15.1.0</target-go-version>
         <description>Plugin that polls a GitHub repository for pull requests and triggers a build for each of them</description>
         <vendor>
             <name>Ashwanth Kumar</name>
