@@ -5,6 +5,7 @@ import in.ashwanthkumar.gocd.github.json.Exclude;
 public class PullRequestStatus {
     private int id;
     private String ref;
+    private String mergeRef;
     private String lastHead;
     private boolean alreadyScheduled;
     @Exclude
@@ -26,6 +27,7 @@ public class PullRequestStatus {
                              String author, String authorEmail, String description, String title) {
         this.id = id;
         this.ref = String.format("refs/pull/%d/head", getId());
+        this.mergeRef = String.format("refs/pull/%d/merge", getId());
         this.lastHead = headSHA;
         this.alreadyScheduled = false;
         this.prBranch = prBranch;
@@ -87,6 +89,10 @@ public class PullRequestStatus {
     public PullRequestStatus scheduled() {
         this.alreadyScheduled = true;
         return this;
+    }
+
+    public String getMergeRef() {
+        return mergeRef;
     }
 
     public PullRequestStatus merge(PullRequestStatus newPRStatus) {

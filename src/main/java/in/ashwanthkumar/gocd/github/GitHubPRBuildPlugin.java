@@ -9,16 +9,13 @@ import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import in.ashwanthkumar.gocd.github.json.JSONUtils;
-import in.ashwanthkumar.gocd.github.model.ModifiedFile;
-import in.ashwanthkumar.gocd.github.model.PullRequestStatus;
-import in.ashwanthkumar.gocd.github.model.PullRequests;
-import in.ashwanthkumar.gocd.github.model.Revision;
+import in.ashwanthkumar.gocd.github.model.*;
 import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.collections.Maps;
 import in.ashwanthkumar.utils.func.Function;
-import in.ashwanthkumar.utils.func.Predicate;
 import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jgit.lib.Ref;
 import org.kohsuke.github.*;
 
 import java.io.IOException;
@@ -27,7 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
+import static in.ashwanthkumar.gocd.github.GitConstants.PR_FETCH_REFSPEC;
 import static java.util.Arrays.asList;
 
 @Extension
@@ -144,22 +143,19 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
         try {
             LOGGER.info(String.format("Connecting to Github for %s", url));
-            GHRepository repository = GitHub.connect().getRepository(GHUtils.parseGithubUrl(url));
+            final GHRepository repository = GitHub.connect().getRepository(GHUtils.parseGithubUrl(url));
             LOGGER.info("Github Connection succesful!");
-            LOGGER.info("Fetching PR information from " + repository.getFullName());
-            List<PullRequestStatus> prStatuses = getPullRequestStatuses(repository);
-            LOGGER.info("Fetch successful.");
-            PullRequestStatus currentPR = null;
-            if (prStatuses.isEmpty()) {
-                LOGGER.info("handleGetLatestRevision# - No active PRs found. We're good");
-                return renderJSON(SUCCESS_RESPONSE_CODE, null);
-            } else {
-                currentPR = prStatuses.get(0);
-            }
 
             JGitHelper jGit = new JGitHelper();
-            jGit.cloneOrFetch(repository.getSshUrl(), flyweightFolder);
-            jGit.fetchRepository(repository.getSshUrl(), flyweightFolder, currentPR.getRef());
+            jGit.cloneOrFetch(url, flyweightFolder);
+            jGit.fetchRepository(url, flyweightFolder, PR_FETCH_REFSPEC);
+            MergeRefs mergeRefs = jGit.findMergeRef(flyweightFolder);
+            if (mergeRefs.isEmpty()) {
+                LOGGER.info("handleGetLatestRevision# - No active PRs found. We're good");
+                return renderJSON(SUCCESS_RESPONSE_CODE, null);
+            }
+            int currentPullRequestID = idFromRef(mergeRefs.head());
+            PullRequestStatus currentPR = transformGHPullRequestToPullRequestStatus().apply(repository.getPullRequest(currentPullRequestID));
             jGit.checkoutToRevision(flyweightFolder, currentPR.getLastHead());
             Revision revision = jGit.getLatestRevision(flyweightFolder);
 
@@ -168,7 +164,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             } else {
                 currentPR.scheduled();
-                Map<String, Object> revisionMap = getRevisionMap(revision, prStatuses, currentPR);
+                Map<String, Object> revisionMap = getRevisionMap(revision, Lists.of(currentPR), currentPR);
                 LOGGER.info("Triggered build for PR#" + currentPR.getId() + " with head as " + currentPR.getLastHead());
                 return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
             }
@@ -176,6 +172,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             LOGGER.warn("get latest revision: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
         }
+    }
+
+    private int idFromRef(Ref prRef) {
+        // generally of the form refs/gh-merge/remotes/origin/3
+        String idInString = prRef.getName().split("/")[4];
+        return Integer.valueOf(idInString);
     }
 
     private GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
@@ -204,13 +206,15 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
             JGitHelper jGit = new JGitHelper();
             jGit.cloneOrFetch(url, flyweightFolder);
-            jGit.fetchRepository(url, flyweightFolder, currentPR.getRef());
-            jGit.checkoutToRevision(flyweightFolder, currentPR.getLastHead());
-            List<Revision> newerRevisions;
-            if (activePullRequests.hasId(currentPR.getId()) && activePullRequests.get(currentPR.getId()).hasChanged(currentPR.getLastHead())) {
+            jGit.fetchRepository(url, flyweightFolder, PR_FETCH_REFSPEC);
+            boolean hasNoConflicts = jGit.hasMergeRef(flyweightFolder, currentPR.getId());
+            List<Revision> newerRevisions = null;
+            if (hasNoConflicts && activePullRequests.hasId(currentPR.getId()) && activePullRequests.get(currentPR.getId()).hasChanged(currentPR.getLastHead())) {
                 newerRevisions = jGit.getNewerRevisions(flyweightFolder, activePullRequests.get(currentPR.getId()).getLastHead());
-            } else {
+            } else if (hasNoConflicts) {
                 newerRevisions = Lists.of(jGit.getLatestRevision(flyweightFolder));
+            } else {
+                LOGGER.warn(String.format("PR#%d has merge conflicts with %s hence we're not building it.", currentPR.getId(), currentPR.getToBranch()));
             }
 
             if (newerRevisions == null || newerRevisions.isEmpty()) {
@@ -266,7 +270,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private List<PullRequestStatus> getPullRequestStatuses(GHRepository repository) throws IOException {
         List<GHPullRequest> activePRs = repository.getPullRequests(GHIssueState.OPEN);
-        return Lists.map(activePRs, new Function<GHPullRequest, PullRequestStatus>() {
+        return Lists.map(activePRs, transformGHPullRequestToPullRequestStatus());
+    }
+
+    private Function<GHPullRequest, PullRequestStatus> transformGHPullRequestToPullRequestStatus() {
+        return new Function<GHPullRequest, PullRequestStatus>() {
             @Override
             public PullRequestStatus apply(GHPullRequest input) {
                 int prID = GHUtils.prIdFrom(input.getDiffUrl().toString());
@@ -279,7 +287,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                     throw new RuntimeException(e);
                 }
             }
-        });
+        };
     }
 
     private void validate(List<Map<String, Object>> response, FieldValidator fieldValidator) {

@@ -1,9 +1,12 @@
 package in.ashwanthkumar.gocd.github;
 
+import in.ashwanthkumar.gocd.github.model.MergeRefs;
 import in.ashwanthkumar.gocd.github.model.ModifiedFile;
 import in.ashwanthkumar.gocd.github.model.Revision;
 import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.func.Function;
+import in.ashwanthkumar.utils.func.Predicate;
+import in.ashwanthkumar.utils.lang.option.Option;
 import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -22,6 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static java.lang.String.format;
 
 public class JGitHelper {
     public void cloneOrFetch(String url, String folder) throws Exception {
@@ -173,6 +178,40 @@ public class JGitHelper {
 
     public void checkoutToRevision(String folder, String revision) throws Exception {
         resetRepository(folder, revision);
+    }
+
+    /**
+     * Returns true if post merge there are no conflicts, false otherwise.
+     */
+    public boolean hasMergeRef(String folder, int prID) throws Exception {
+        Repository repository = null;
+        try {
+            repository = new FileRepositoryBuilder().setGitDir(getGitDir(folder)).readEnvironment().findGitDir().build();
+            Git git = new Git(repository);
+            return git.getRepository().getRef(String.valueOf(String.format("%s/%d", GitConstants.PR_MERGE_PREFIX, prID))) != null;
+        } finally {
+            if (repository != null) {
+                repository.close();
+            }
+        }
+    }
+
+    public MergeRefs findMergeRef(String folder) throws Exception {
+        Repository repository = null;
+        try {
+            repository = new FileRepositoryBuilder().setGitDir(getGitDir(folder)).readEnvironment().findGitDir().build();
+            Git git = new Git(repository);
+            return new MergeRefs(Lists.filter(git.getRepository().getAllRefs().values(), new Predicate<Ref>() {
+                @Override
+                public Boolean apply(Ref input) {
+                    return input.getName().startsWith(GitConstants.PR_MERGE_PREFIX);
+                }
+            }));
+        } finally {
+            if (repository != null) {
+                repository.close();
+            }
+        }
     }
 
     private Revision getRevisionObj(Repository repository, RevCommit commit) throws IOException {
