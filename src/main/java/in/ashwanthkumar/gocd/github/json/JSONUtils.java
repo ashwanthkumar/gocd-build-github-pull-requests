@@ -8,6 +8,7 @@ import java.util.HashMap;
 
 public class JSONUtils {
     private final static GsonBuilder gsonBuilder = new GsonBuilder()
+            .setExclusionStrategies(new AnnotationExclusionStrategy())
             .registerTypeAdapter(SCMConfig.class, new SCMConfigSerDe())
             .registerTypeAdapter(PullRequests.class, new PullRequestsSerDe());
 

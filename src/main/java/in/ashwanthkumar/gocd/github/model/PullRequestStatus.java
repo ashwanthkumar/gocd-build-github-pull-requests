@@ -1,15 +1,29 @@
 package in.ashwanthkumar.gocd.github.model;
 
+import in.ashwanthkumar.gocd.github.json.Exclude;
+
 public class PullRequestStatus {
     private int id;
     private String ref;
     private String lastHead;
-    private String prBranch;
-    private String toBranch;
-    private String url;
     private boolean alreadyScheduled;
+    @Exclude
+    private String prBranch;
+    @Exclude
+    private String toBranch;
+    @Exclude
+    private String url;
+    @Exclude
+    private String author;
+    @Exclude
+    private String authorEmail;
+    @Exclude
+    private String description;
+    @Exclude
+    private String title;
 
-    public PullRequestStatus(int id, String headSHA, String prBranch, String toBranch, String url) {
+    public PullRequestStatus(int id, String headSHA, String prBranch, String toBranch, String url,
+                             String author, String authorEmail, String description, String title) {
         this.id = id;
         this.ref = String.format("refs/pull/%d/head", getId());
         this.lastHead = headSHA;
@@ -17,6 +31,10 @@ public class PullRequestStatus {
         this.prBranch = prBranch;
         this.toBranch = toBranch;
         this.url = url;
+        this.author = author;
+        this.authorEmail = authorEmail;
+        this.description = description;
+        this.title = title;
     }
 
     private PullRequestStatus() {
@@ -50,14 +68,42 @@ public class PullRequestStatus {
         return url;
     }
 
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getAuthorEmail() {
+        return authorEmail;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
     public PullRequestStatus scheduled() {
         this.alreadyScheduled = true;
         return this;
     }
 
     public PullRequestStatus merge(PullRequestStatus newPRStatus) {
-        if (lastHead.equalsIgnoreCase(newPRStatus.getLastHead())) return copy();
-        else return new PullRequestStatus(id, newPRStatus.getLastHead(), prBranch, toBranch, url);
+        if (lastHead.equalsIgnoreCase(newPRStatus.getLastHead())) return copy().mergePRFields(newPRStatus);
+        else return new PullRequestStatus(id, newPRStatus.getLastHead(), newPRStatus.prBranch, newPRStatus.toBranch,
+                newPRStatus.url, newPRStatus.author, newPRStatus.authorEmail, newPRStatus.description, newPRStatus.title);
+    }
+
+    private PullRequestStatus mergePRFields(PullRequestStatus statusWithPRData) {
+        this.prBranch = statusWithPRData.prBranch;
+        this.toBranch = statusWithPRData.toBranch;
+        this.url = statusWithPRData.url;
+        this.author = statusWithPRData.author;
+        this.authorEmail = statusWithPRData.authorEmail;
+        this.description = statusWithPRData.description;
+        this.title = statusWithPRData.title;
+        return this;
     }
 
     public boolean hasChanged(String newLatestHead) {
@@ -65,9 +111,9 @@ public class PullRequestStatus {
     }
 
     private PullRequestStatus copy() {
-        PullRequestStatus pullRequestStatus = new PullRequestStatus(id, lastHead, prBranch, toBranch, url);
-        if (isAlreadyScheduled()) pullRequestStatus.scheduled();
-        return pullRequestStatus;
+        PullRequestStatus clone = new PullRequestStatus(id, lastHead, prBranch, toBranch, url, author, authorEmail, description, title);
+        if (isAlreadyScheduled()) clone.scheduled();
+        return clone;
     }
 
 

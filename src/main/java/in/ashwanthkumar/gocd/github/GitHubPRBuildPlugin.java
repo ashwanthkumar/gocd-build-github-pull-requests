@@ -16,12 +16,10 @@ import in.ashwanthkumar.gocd.github.model.Revision;
 import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.collections.Maps;
 import in.ashwanthkumar.utils.func.Function;
+import in.ashwanthkumar.utils.func.Predicate;
 import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.IOUtils;
-import org.kohsuke.github.GHIssueState;
-import org.kohsuke.github.GHPullRequest;
-import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GitHub;
+import org.kohsuke.github.*;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -185,7 +183,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         String url = configuration.get("url");
         String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
         Map<String, Object> previousRevisionMap = getMapFor(goPluginApiRequest, "previous-revision");
-        PullRequests activePullRequests = JSONUtils.fromJson(((Map<String, Object>) previousRevisionMap.get("data")).get("activePullRequests").toString(), PullRequests.class);
+        PullRequests activePullRequests = JSONUtils.fromJson(((Map<String, Object>) previousRevisionMap.get("data")).get("ACTIVE_PULL_REQUESTS").toString(), PullRequests.class);
 
         try {
             LOGGER.info(String.format("Connecting to Github for %s", url));
@@ -272,7 +270,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             @Override
             public PullRequestStatus apply(GHPullRequest input) {
                 int prID = GHUtils.prIdFrom(input.getDiffUrl().toString());
-                return new PullRequestStatus(prID, input.getHead().getSha(), input.getBase().getLabel(), input.getHead().getLabel(), input.getHtmlUrl().toString());
+                try {
+                    GHUser user = input.getUser();
+                    return new PullRequestStatus(prID, input.getHead().getSha(), input.getHead().getLabel(),
+                            input.getBase().getLabel(), input.getHtmlUrl().toString(), user.getName(),
+                            user.getEmail(), input.getBody(), input.getTitle());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
     }
@@ -298,11 +303,16 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             modifiedFilesMapList.add(modifiedFileMap);
         }
         Map<String, String> customDataBag = Maps.<String, String>builder()
-                .put("activePullRequests", JSONUtils.toJson(prStatuses))
+                .put("ACTIVE_PULL_REQUESTS", JSONUtils.toJson(prStatuses))
                 .put("PR_ID", String.valueOf(currentPR.getId()))
                 .put("PR_BRANCH", String.valueOf(currentPR.getPrBranch()))
                 .put("TARGET_BRANCH", String.valueOf(currentPR.getToBranch()))
-                .put("URL", String.valueOf(currentPR.getUrl()))
+                .put("PR_URL", String.valueOf(currentPR.getUrl()))
+                .put("PR_AUTHOR", currentPR.getAuthor())
+                .put("PR_AUTHOR_EMAIL", currentPR.getAuthorEmail())
+                .put("PR_DESCRIPTION", currentPR.getDescription())
+                .put("PR_TITLE", currentPR.getTitle())
+                .put("PR_REF", currentPR.getRef())
                 .value();
         response.put("data", customDataBag);
         response.put("modifiedFiles", modifiedFilesMapList);
