@@ -1,5 +1,7 @@
 package in.ashwanthkumar.gocd.github;
 
+import org.eclipse.jgit.lib.Ref;
+
 public class GHUtils {
     public static String parseGithubUrl(String url) {
         String urlInLowerCase = url.toLowerCase();
@@ -21,4 +23,11 @@ public class GHUtils {
     public static int prIdFrom(String diffUrl) {
         return Integer.parseInt(diffUrl.substring(diffUrl.indexOf("/pull/") + 6, diffUrl.length() - 5));
     }
+
+    public static int pullRequestIdFromRef(Ref prRef) {
+        // generally of the form refs/gh-merge/remotes/origin/3
+        String idInString = prRef.getName().split("/")[4];
+        return Integer.valueOf(idInString);
+    }
+
 }

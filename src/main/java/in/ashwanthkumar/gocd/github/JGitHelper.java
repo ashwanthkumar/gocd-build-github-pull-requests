@@ -84,7 +84,7 @@ public class JGitHelper {
                     return new RefSpec(input);
                 }
             });
-            FetchCommand fetch = git.fetch().setRefSpecs(refSpecs);
+            FetchCommand fetch = git.fetch().setRemoveDeletedRefs(true).setRefSpecs(refSpecs);
             if (url.startsWith("http") || url.startsWith("https")) {
                 // TODO - if url is http/https - set credentials
             }
