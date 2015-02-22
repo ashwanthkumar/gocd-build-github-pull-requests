@@ -16,7 +16,9 @@ import in.ashwanthkumar.utils.func.Function;
 import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.lib.Ref;
-import org.kohsuke.github.*;
+import org.kohsuke.github.GHPullRequest;
+import org.kohsuke.github.GHUser;
+import org.kohsuke.github.GitHub;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;

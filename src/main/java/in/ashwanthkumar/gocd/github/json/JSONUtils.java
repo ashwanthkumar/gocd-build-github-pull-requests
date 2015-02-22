@@ -2,14 +2,12 @@ package in.ashwanthkumar.gocd.github.json;
 
 import com.google.gson.GsonBuilder;
 import in.ashwanthkumar.gocd.github.model.PullRequests;
-import in.ashwanthkumar.gocd.github.model.SCMConfig;
 
 import java.util.HashMap;
 
 public class JSONUtils {
     private final static GsonBuilder gsonBuilder = new GsonBuilder()
             .setExclusionStrategies(new AnnotationExclusionStrategy())
-            .registerTypeAdapter(SCMConfig.class, new SCMConfigSerDe())
             .registerTypeAdapter(PullRequests.class, new PullRequestsSerDe());
 
     public static String toJson(Object anything) {

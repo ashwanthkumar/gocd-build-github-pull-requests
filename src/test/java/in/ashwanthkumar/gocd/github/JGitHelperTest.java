@@ -48,7 +48,7 @@ public class JGitHelperTest {
 
         Revision revision = jGit.getLatestRevision(testRepository.getAbsolutePath());
 
-        verifyRevision(revision, "012e893acea10b140688d11beaa728e8c60bd9f6", "1", asList(new Pair("a.txt", "add")));
+        verifyRevision(revision, "012e893acea10b140688d11beaa728e8c60bd9f6", "1", asList(new Pair("a.txt", "added")));
 
         // Fetch & Get LatestRevisionsSince
         FileUtils.deleteQuietly(simpleGitRepository.getAbsoluteFile());
