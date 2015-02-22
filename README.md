@@ -9,7 +9,7 @@ This needs GoCD >= v15.x which is due release as of writing.
 
 ## Get Started
 - Download the latest plugin jar from [Releases](https://github.com/ashwanthkumar/gocd-build-github-pull-requests/releases) section.
-- Create a file `~/.github` on Go Server and on all Go Agent machines, with the following contents. More information on http://github-api.kohsuke.org/. In the next release of the plugin we'll remove this dependency. 
+- Create a file `~/.github` on Go Server and on all Go Agent machines, with the following contents.
 ```
 login=johndoe
 password=thisaintapassword
