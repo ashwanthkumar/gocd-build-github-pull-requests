@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static in.ashwanthkumar.gocd.github.GHUtils.buildGithubFromPropertyFile;
 import static in.ashwanthkumar.gocd.github.GHUtils.pullRequestIdFromRef;
 import static in.ashwanthkumar.gocd.github.GitConstants.PR_FETCH_REFSPEC;
 import static java.util.Arrays.asList;
@@ -256,7 +257,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GHPullRequest pullRequestFrom(String url, int currentPullRequestID) throws IOException {
-        return GitHub.connect().getRepository(GHUtils.parseGithubUrl(url)).getPullRequest(currentPullRequestID);
+        return buildGithubFromPropertyFile()
+                .getRepository(GHUtils.parseGithubUrl(url))
+                .getPullRequest(currentPullRequestID);
     }
 
     private Function<GHPullRequest, PullRequestStatus> transformGHPullRequestToPullRequestStatus(final String mergedSHA) {
