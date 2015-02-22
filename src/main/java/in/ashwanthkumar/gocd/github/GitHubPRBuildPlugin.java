@@ -9,16 +9,13 @@ import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import in.ashwanthkumar.gocd.github.json.JSONUtils;
-import in.ashwanthkumar.gocd.github.model.ModifiedFile;
-import in.ashwanthkumar.gocd.github.model.PullRequestStatus;
-import in.ashwanthkumar.gocd.github.model.PullRequests;
-import in.ashwanthkumar.gocd.github.model.Revision;
+import in.ashwanthkumar.gocd.github.model.*;
 import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.collections.Maps;
 import in.ashwanthkumar.utils.func.Function;
-import in.ashwanthkumar.utils.func.Predicate;
 import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jgit.lib.Ref;
 import org.kohsuke.github.*;
 
 import java.io.IOException;
@@ -28,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static in.ashwanthkumar.gocd.github.GHUtils.pullRequestIdFromRef;
+import static in.ashwanthkumar.gocd.github.GitConstants.PR_FETCH_REFSPEC;
 import static java.util.Arrays.asList;
 
 @Extension
@@ -140,36 +139,30 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         String url = configuration.get("url");
         String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
 
-        LOGGER.warn("flyweight: " + flyweightFolder);
+        LOGGER.debug("flyweight: " + flyweightFolder);
 
         try {
-            LOGGER.info(String.format("Connecting to Github for %s", url));
-            GHRepository repository = GitHub.connect().getRepository(GHUtils.parseGithubUrl(url));
-            LOGGER.info("Github Connection succesful!");
-            LOGGER.info("Fetching PR information from " + repository.getFullName());
-            List<PullRequestStatus> prStatuses = getPullRequestStatuses(repository);
-            LOGGER.info("Fetch successful.");
-            PullRequestStatus currentPR = null;
-            if (prStatuses.isEmpty()) {
-                LOGGER.info("handleGetLatestRevision# - No active PRs found. We're good");
-                return renderJSON(SUCCESS_RESPONSE_CODE, null);
-            } else {
-                currentPR = prStatuses.get(0);
-            }
-
             JGitHelper jGit = new JGitHelper();
-            jGit.cloneOrFetch(repository.getSshUrl(), flyweightFolder);
-            jGit.fetchRepository(repository.getSshUrl(), flyweightFolder, currentPR.getRef());
-            jGit.checkoutToRevision(flyweightFolder, currentPR.getLastHead());
+            jGit.cloneOrFetch(url, flyweightFolder);
+            jGit.fetchRepository(url, flyweightFolder, PR_FETCH_REFSPEC);
+            MergeRefs mergeRefs = jGit.findMergeRef(flyweightFolder);
+            if (mergeRefs.isEmpty()) {
+                LOGGER.debug("handleGetLatestRevision# - No active PRs found. We're good");
+                return renderJSON(SUCCESS_RESPONSE_CODE, null);
+            }
+            Ref currentPullRequestRef = mergeRefs.head();
+            int currentPullRequestID = pullRequestIdFromRef(currentPullRequestRef);
+            PullRequestStatus currentPR = transformGHPullRequestToPullRequestStatus(currentPullRequestRef.getObjectId().name())
+                    .apply(pullRequestFrom(url, currentPullRequestID));
+            jGit.checkoutToRevision(flyweightFolder, currentPR.getMergeRef());
             Revision revision = jGit.getLatestRevision(flyweightFolder);
 
             if (revision == null) {
-                LOGGER.info("handleGetLatestRevision# - No latest revision found");
+                LOGGER.debug("handleGetLatestRevision# - No latest revision found");
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             } else {
-                currentPR.scheduled();
-                Map<String, Object> revisionMap = getRevisionMap(revision, prStatuses, currentPR);
-                LOGGER.info("Triggered build for PR#" + currentPR.getId() + " with head as " + currentPR.getLastHead());
+                Map<String, Object> revisionMap = getRevisionMap(revision, Lists.of(currentPR), currentPR);
+                LOGGER.info("Triggered build for PR#" + currentPR.getId() + " with head as " + currentPR.getMergeSHA());
                 return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
             }
         } catch (Throwable t) {
@@ -186,54 +179,51 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         PullRequests activePullRequests = JSONUtils.fromJson(((Map<String, Object>) previousRevisionMap.get("data")).get("ACTIVE_PULL_REQUESTS").toString(), PullRequests.class);
 
         try {
-            LOGGER.info(String.format("Connecting to Github for %s", url));
-            GHRepository repository = GitHub.connect().getRepository(GHUtils.parseGithubUrl(url));
-            LOGGER.info("Github Connection succesful!");
-            LOGGER.info("Fetching PR information from " + repository.getFullName());
-            List<PullRequestStatus> openPRs = getPullRequestStatuses(repository);
-            LOGGER.info("Fetch successful.");
-            PullRequests newActivePullRequests = activePullRequests.mergeWith(openPRs);
-            Option<PullRequestStatus> notProcessed = newActivePullRequests.nextNotProcessed();
-            if (notProcessed.isEmpty()) {
-                LOGGER.info("#handleLatestRevisionSince - No Active PRs / all PRs already built up-to-date.");
+            JGitHelper jGit = new JGitHelper();
+            LOGGER.debug("handleLatestRevisionSince# - Cloning / Fetching the latest for " + url);
+            jGit.cloneOrFetch(url, flyweightFolder);
+            LOGGER.debug("handleLatestRevisionSince# - Fetching all PR merge refs from remote - " + url);
+            jGit.fetchRepository(url, flyweightFolder, PR_FETCH_REFSPEC);
+            MergeRefs mergeRefs = jGit.findMergeRef(flyweightFolder);
+            Option<Ref> newPullRequest = mergeRefs.findNotProcessed(activePullRequests);
+            if (mergeRefs.isEmpty() || newPullRequest.isEmpty()) {
+                LOGGER.debug("handleLatestRevisionSince# - No active PRs found. We're good here.");
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             }
-            PullRequestStatus currentPR = notProcessed.get();
 
-            LOGGER.info("We're going to process Pull Request #" + currentPR.getId());
+            Ref currentPullRequestRef = newPullRequest.get();
+            int currentPullRequestID = pullRequestIdFromRef(currentPullRequestRef);
+            PullRequestStatus currentPR = transformGHPullRequestToPullRequestStatus(currentPullRequestRef.getObjectId().name())
+                    .apply(pullRequestFrom(url, currentPullRequestID));
+            jGit.checkoutToRevision(flyweightFolder, currentPR.getMergeRef());
 
-            JGitHelper jGit = new JGitHelper();
-            jGit.cloneOrFetch(url, flyweightFolder);
-            jGit.fetchRepository(url, flyweightFolder, currentPR.getRef());
-            jGit.checkoutToRevision(flyweightFolder, currentPR.getLastHead());
             List<Revision> newerRevisions;
-            if (activePullRequests.hasId(currentPR.getId()) && activePullRequests.get(currentPR.getId()).hasChanged(currentPR.getLastHead())) {
+            if (activePullRequests.hasId(currentPR.getId()) && activePullRequests.get(currentPR.getId()).hasChanged(currentPR.getMergeSHA())) {
                 newerRevisions = jGit.getNewerRevisions(flyweightFolder, activePullRequests.get(currentPR.getId()).getLastHead());
             } else {
                 newerRevisions = Lists.of(jGit.getLatestRevision(flyweightFolder));
             }
 
             if (newerRevisions == null || newerRevisions.isEmpty()) {
-                LOGGER.warn("We did not find any new revisions on PR-" + currentPR.getId());
-                LOGGER.warn("currentPR-" + currentPR);
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             } else {
-                LOGGER.warn("new commits: " + newerRevisions.size());
-
                 Map<String, Object> response = new HashMap<String, Object>();
                 List<Map> revisions = new ArrayList<Map>();
-                newActivePullRequests.schedule(currentPR.getId());
+                PullRequests pullRequestsToSave = activePullRequests.mergeWith(currentPR, mergeRefs);
+                LOGGER.debug("Custom Data bag to save in handleLatestRevisionSince");
+                LOGGER.debug(JSONUtils.toJson(pullRequestsToSave));
+
                 for (Revision revisionObj : newerRevisions) {
-                    Map<String, Object> revisionMap = getRevisionMap(revisionObj, newActivePullRequests.getPullRequestStatuses(), currentPR);
+                    Map<String, Object> revisionMap = getRevisionMap(revisionObj, pullRequestsToSave.getPullRequestStatuses(), currentPR);
                     revisions.add(revisionMap);
                 }
                 response.put("revisions", revisions);
-                LOGGER.info("Triggered build for PR#" + currentPR.getId() + " with head as " + currentPR.getLastHead());
+                LOGGER.info("#handleLatestRevisionSince - Triggered build for PR#" + currentPR.getId() + " at " + currentPR.getMergeSHA());
                 return renderJSON(SUCCESS_RESPONSE_CODE, response);
             }
         } catch (Throwable t) {
             LOGGER.warn("get latest revisions since: ", t);
-            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, null);
+            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
         }
     }
 
@@ -249,6 +239,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         try {
             JGitHelper jGit = new JGitHelper();
             jGit.cloneOrFetch(url, destinationFolder);
+            jGit.fetchRepository(url, destinationFolder, PR_FETCH_REFSPEC);
             jGit.checkoutToRevision(destinationFolder, revision);
 
             Map<String, Object> response = new HashMap<String, Object>();
@@ -260,26 +251,29 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } catch (Throwable t) {
             LOGGER.warn("checkout: ", t);
-            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, null);
+            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
         }
     }
 
-    private List<PullRequestStatus> getPullRequestStatuses(GHRepository repository) throws IOException {
-        List<GHPullRequest> activePRs = repository.getPullRequests(GHIssueState.OPEN);
-        return Lists.map(activePRs, new Function<GHPullRequest, PullRequestStatus>() {
+    private GHPullRequest pullRequestFrom(String url, int currentPullRequestID) throws IOException {
+        return GitHub.connect().getRepository(GHUtils.parseGithubUrl(url)).getPullRequest(currentPullRequestID);
+    }
+
+    private Function<GHPullRequest, PullRequestStatus> transformGHPullRequestToPullRequestStatus(final String mergedSHA) {
+        return new Function<GHPullRequest, PullRequestStatus>() {
             @Override
             public PullRequestStatus apply(GHPullRequest input) {
                 int prID = GHUtils.prIdFrom(input.getDiffUrl().toString());
                 try {
                     GHUser user = input.getUser();
-                    return new PullRequestStatus(prID, input.getHead().getSha(), input.getHead().getLabel(),
+                    return new PullRequestStatus(prID, input.getHead().getSha(), mergedSHA, input.getHead().getLabel(),
                             input.getBase().getLabel(), input.getHtmlUrl().toString(), user.getName(),
                             user.getEmail(), input.getBody(), input.getTitle());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
-        });
+        };
     }
 
     private void validate(List<Map<String, Object>> response, FieldValidator fieldValidator) {
@@ -312,7 +306,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 .put("PR_AUTHOR_EMAIL", currentPR.getAuthorEmail())
                 .put("PR_DESCRIPTION", currentPR.getDescription())
                 .put("PR_TITLE", currentPR.getTitle())
-                .put("PR_REF", currentPR.getRef())
                 .value();
         response.put("data", customDataBag);
         response.put("modifiedFiles", modifiedFilesMapList);

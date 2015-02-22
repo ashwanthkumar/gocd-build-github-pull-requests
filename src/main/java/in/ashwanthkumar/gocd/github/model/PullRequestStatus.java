@@ -1,12 +1,15 @@
 package in.ashwanthkumar.gocd.github.model;
 
+import in.ashwanthkumar.gocd.github.GitConstants;
 import in.ashwanthkumar.gocd.github.json.Exclude;
 
 public class PullRequestStatus {
     private int id;
-    private String ref;
+    private String mergeRef;
+    // We use this while computing the revisions
     private String lastHead;
-    private boolean alreadyScheduled;
+    // We use this to find changes in a PR
+    private String mergeSHA;
     @Exclude
     private String prBranch;
     @Exclude
@@ -22,12 +25,12 @@ public class PullRequestStatus {
     @Exclude
     private String title;
 
-    public PullRequestStatus(int id, String headSHA, String prBranch, String toBranch, String url,
+    public PullRequestStatus(int id, String lastHead, String mergedSHA, String prBranch, String toBranch, String url,
                              String author, String authorEmail, String description, String title) {
         this.id = id;
-        this.ref = String.format("refs/pull/%d/head", getId());
-        this.lastHead = headSHA;
-        this.alreadyScheduled = false;
+        this.mergeRef = String.format("%s/%d", GitConstants.PR_MERGE_PREFIX , getId());
+        this.lastHead = lastHead;
+        this.mergeSHA = mergedSHA;
         this.prBranch = prBranch;
         this.toBranch = toBranch;
         this.url = url;
@@ -44,16 +47,8 @@ public class PullRequestStatus {
         return id;
     }
 
-    public String getRef() {
-        return ref;
-    }
-
     public String getLastHead() {
         return lastHead;
-    }
-
-    public boolean isAlreadyScheduled() {
-        return alreadyScheduled;
     }
 
     public String getPrBranch() {
@@ -84,14 +79,17 @@ public class PullRequestStatus {
         return title;
     }
 
-    public PullRequestStatus scheduled() {
-        this.alreadyScheduled = true;
-        return this;
+    public String getMergeRef() {
+        return mergeRef;
+    }
+
+    public String getMergeSHA() {
+        return mergeSHA;
     }
 
     public PullRequestStatus merge(PullRequestStatus newPRStatus) {
-        if (lastHead.equalsIgnoreCase(newPRStatus.getLastHead())) return copy().mergePRFields(newPRStatus);
-        else return new PullRequestStatus(id, newPRStatus.getLastHead(), newPRStatus.prBranch, newPRStatus.toBranch,
+        if (mergeSHA.equalsIgnoreCase(newPRStatus.getMergeSHA())) return copy().mergePRFields(newPRStatus);
+        else return new PullRequestStatus(id, lastHead, newPRStatus.mergeSHA, newPRStatus.prBranch, newPRStatus.toBranch,
                 newPRStatus.url, newPRStatus.author, newPRStatus.authorEmail, newPRStatus.description, newPRStatus.title);
     }
 
@@ -111,22 +109,23 @@ public class PullRequestStatus {
     }
 
     private PullRequestStatus copy() {
-        PullRequestStatus clone = new PullRequestStatus(id, lastHead, prBranch, toBranch, url, author, authorEmail, description, title);
-        if (isAlreadyScheduled()) clone.scheduled();
-        return clone;
+        return new PullRequestStatus(id, lastHead, mergeSHA, prBranch, toBranch, url, author, authorEmail, description, title);
     }
-
 
     @Override
     public String toString() {
         return "PullRequestStatus{" +
                 "id=" + id +
-                ", ref='" + ref + '\'' +
+                ", mergeRef='" + mergeRef + '\'' +
                 ", lastHead='" + lastHead + '\'' +
+                ", mergeSHA='" + mergeSHA + '\'' +
                 ", prBranch='" + prBranch + '\'' +
                 ", toBranch='" + toBranch + '\'' +
                 ", url='" + url + '\'' +
-                ", alreadyScheduled=" + alreadyScheduled +
+                ", author='" + author + '\'' +
+                ", authorEmail='" + authorEmail + '\'' +
+                ", description='" + description + '\'' +
+                ", title='" + title + '\'' +
                 '}';
     }
 
@@ -137,11 +136,15 @@ public class PullRequestStatus {
 
         PullRequestStatus that = (PullRequestStatus) o;
 
-        if (alreadyScheduled != that.alreadyScheduled) return false;
         if (id != that.id) return false;
+        if (author != null ? !author.equals(that.author) : that.author != null) return false;
+        if (authorEmail != null ? !authorEmail.equals(that.authorEmail) : that.authorEmail != null) return false;
+        if (description != null ? !description.equals(that.description) : that.description != null) return false;
         if (lastHead != null ? !lastHead.equals(that.lastHead) : that.lastHead != null) return false;
+        if (mergeRef != null ? !mergeRef.equals(that.mergeRef) : that.mergeRef != null) return false;
+        if (mergeSHA != null ? !mergeSHA.equals(that.mergeSHA) : that.mergeSHA != null) return false;
         if (prBranch != null ? !prBranch.equals(that.prBranch) : that.prBranch != null) return false;
-        if (ref != null ? !ref.equals(that.ref) : that.ref != null) return false;
+        if (title != null ? !title.equals(that.title) : that.title != null) return false;
         if (toBranch != null ? !toBranch.equals(that.toBranch) : that.toBranch != null) return false;
         if (url != null ? !url.equals(that.url) : that.url != null) return false;
 
@@ -151,12 +154,16 @@ public class PullRequestStatus {
     @Override
     public int hashCode() {
         int result = id;
-        result = 31 * result + (ref != null ? ref.hashCode() : 0);
+        result = 31 * result + (mergeRef != null ? mergeRef.hashCode() : 0);
         result = 31 * result + (lastHead != null ? lastHead.hashCode() : 0);
+        result = 31 * result + (mergeSHA != null ? mergeSHA.hashCode() : 0);
         result = 31 * result + (prBranch != null ? prBranch.hashCode() : 0);
         result = 31 * result + (toBranch != null ? toBranch.hashCode() : 0);
         result = 31 * result + (url != null ? url.hashCode() : 0);
-        result = 31 * result + (alreadyScheduled ? 1 : 0);
+        result = 31 * result + (author != null ? author.hashCode() : 0);
+        result = 31 * result + (authorEmail != null ? authorEmail.hashCode() : 0);
+        result = 31 * result + (description != null ? description.hashCode() : 0);
+        result = 31 * result + (title != null ? title.hashCode() : 0);
         return result;
     }
 }
