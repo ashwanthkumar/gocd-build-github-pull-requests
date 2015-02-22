@@ -59,9 +59,9 @@ endpoint=http://code.yourcompany.com/api/v3
 ## FAQs
 
 ### How Pull Requests are Built?
-We pool periodically for any new PRs on the given repository. We build a pull request when it's first opened and when commits are added to the pull request throughout its lifetime.
+We periodically poll for new PRs on the given repository. We build a pull request when it's first opened and when commits are added to the pull request throughout its lifetime.
 Rather than test the commits from the branches the pull request is sent from, we test the merge between the origin and the upstream branch.
 
-### Pull Request isn't being built?
+### Pull Request isn't being built
 If a pull request isn't built, that usually means that it can't be merged. We rely on the merge commit that GitHub transparently creates between the changes in the source branch and the upstream branch the pull request is sent against.
 So when you create or update a pull request, and Go doesn't create a build for it, make sure the pull request is mergeable. If it isn't, rebase it against the upstream branch and resolve any merge conflicts.
