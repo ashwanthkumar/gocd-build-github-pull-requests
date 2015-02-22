@@ -227,10 +227,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    private GHPullRequest pullRequestFrom(String url, int currentPullRequestID) throws IOException {
-        return GitHub.connect().getRepository(GHUtils.parseGithubUrl(url)).getPullRequest(currentPullRequestID);
-    }
-
     private GoPluginApiResponse handleCheckout(GoPluginApiRequest goPluginApiRequest) {
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
         String url = configuration.get("url");
@@ -257,6 +253,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             LOGGER.warn("checkout: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
         }
+    }
+
+    private GHPullRequest pullRequestFrom(String url, int currentPullRequestID) throws IOException {
+        return GitHub.connect().getRepository(GHUtils.parseGithubUrl(url)).getPullRequest(currentPullRequestID);
     }
 
     private Function<GHPullRequest, PullRequestStatus> transformGHPullRequestToPullRequestStatus(final String mergedSHA) {
