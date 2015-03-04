@@ -43,7 +43,16 @@ public class JGitHelper {
     }
 
     public Iterable<Ref> refs(String folder) throws Exception {
-        return Git.open(new File(folder)).getRepository().getAllRefs().values();
+        Repository repository = null;
+        try {
+            repository = new FileRepositoryBuilder().setGitDir(getGitDir(folder)).readEnvironment().findGitDir().build();
+            Git git = new Git(repository);
+            return git.getRepository().getAllRefs().values();
+        } finally {
+            if (repository != null) {
+                repository.close();
+            }
+        }
     }
 
     private void cloneRepository(String url, String folder) throws Exception {
