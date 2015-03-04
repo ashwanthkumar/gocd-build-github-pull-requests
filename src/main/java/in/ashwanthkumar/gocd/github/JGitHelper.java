@@ -56,7 +56,7 @@ public class JGitHelper {
         cloneCommand.call();
     }
 
-    private void cleanRepository(String folder) throws Exception {
+    public void cleanRepository(String folder) throws Exception {
         Repository repository = null;
         try {
             repository = new FileRepositoryBuilder().setGitDir(getGitDir(folder)).readEnvironment().findGitDir().build();
