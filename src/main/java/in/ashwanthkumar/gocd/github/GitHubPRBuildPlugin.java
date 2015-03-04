@@ -147,6 +147,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         try {
             JGitHelper jGit = new JGitHelper();
             jGit.cloneOrFetch(url, flyweightFolder);
+            Iterable<Ref> refs = jGit.refs(flyweightFolder);
+            String refsAvailableInTheRepository = Lists.mkString(refs);
+            LOGGER.info("Available refs - " + refsAvailableInTheRepository);
             jGit.fetchRepository(url, flyweightFolder, PR_FETCH_REFSPEC);
             MergeRefs mergeRefs = jGit.findMergeRef(flyweightFolder);
             if (mergeRefs.isEmpty()) {

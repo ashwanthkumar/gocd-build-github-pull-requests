@@ -6,6 +6,7 @@ import in.ashwanthkumar.gocd.github.model.Revision;
 import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.func.Function;
 import in.ashwanthkumar.utils.func.Predicate;
+import in.ashwanthkumar.utils.lang.StringUtils;
 import in.ashwanthkumar.utils.lang.option.Option;
 import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -72,7 +73,7 @@ public class JGitHelper {
 
     public void fetchRepository(String url, String folder, String... refs) throws Exception {
         // check remote url - if ok
-        checkoutToRevision(folder, "master");
+        resetRepository(folder);
 
         Repository repository = null;
         try {
@@ -111,12 +112,17 @@ public class JGitHelper {
         }
     }
 
+    private void resetRepository(String folder) throws Exception {
+        resetRepository(folder, null);
+    }
+
     private void resetRepository(String folder, String revision) throws Exception {
         Repository repository = null;
         try {
             repository = new FileRepositoryBuilder().setGitDir(getGitDir(folder)).readEnvironment().findGitDir().build();
             Git git = new Git(repository);
-            ResetCommand reset = git.reset().setMode(ResetCommand.ResetType.HARD).setRef(revision);
+            ResetCommand reset = git.reset().setMode(ResetCommand.ResetType.HARD);
+            if (StringUtils.isNotEmpty(revision)) reset.setRef(revision);
             reset.call();
         } finally {
             if (repository != null) {
