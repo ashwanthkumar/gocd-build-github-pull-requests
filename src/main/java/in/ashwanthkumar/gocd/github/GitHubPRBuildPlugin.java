@@ -201,6 +201,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             int currentPullRequestID = pullRequestIdFromRef(currentPullRequestRef);
             PullRequestStatus currentPR = transformGHPullRequestToPullRequestStatus(currentPullRequestRef.getObjectId().name())
                     .apply(pullRequestFrom(url, currentPullRequestID));
+            jGit.cleanRepository(flyweightFolder);
             jGit.checkoutToRevision(flyweightFolder, currentPR.getMergeRef());
 
             List<Revision> newerRevisions;
