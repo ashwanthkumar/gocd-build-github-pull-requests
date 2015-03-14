@@ -37,8 +37,15 @@ public class GHUtils {
         else return urlWithoutPrefix;
     }
 
-    public static boolean isValidGHUrl(String url) {
-        return url.toLowerCase().startsWith("https://github.com/") || url.toLowerCase().startsWith("git@github.com:");
+    /**
+     * Simple check for SSH form of Git urls
+     * - Should have a @ in the url
+     * - It should have 2 parts when split by /
+     *
+     * FIXME - Find a better way to do this?
+     */
+    public static boolean isValidSSHUrl(String url) {
+        return url.contains("@") && url.replaceAll("//", "/").split("/").length == 2;
     }
 
     public static int prIdFrom(String diffUrl) {

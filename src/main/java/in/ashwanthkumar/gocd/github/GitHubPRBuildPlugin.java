@@ -366,7 +366,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     boolean isValidURL(GitConfig gitConfig) {
-        return new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(gitConfig.getUrl()) && GHUtils.isValidGHUrl(gitConfig.getUrl());
+        return new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(gitConfig.getUrl()) || GHUtils.isValidSSHUrl(gitConfig.getUrl());
     }
 
     GoPluginApiResponse renderJSON(final int responseCode, Object response) {

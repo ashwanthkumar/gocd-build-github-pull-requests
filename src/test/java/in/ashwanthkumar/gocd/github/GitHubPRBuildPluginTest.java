@@ -40,7 +40,7 @@ public class GitHubPRBuildPluginTest {
 
         GoPluginApiResponse response = new GitHubPRBuildPlugin().handle(createGoPluginApiRequest(GitHubPRBuildPlugin.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
 
-        verifyResponse(response.responseBody(), Arrays.asList(new Pair("url", "Either url is empty / invalid.")));
+        verifyResponse(response.responseBody(), Arrays.asList(new Pair("url", "Invalid URL")));
     }
 
     @Test
