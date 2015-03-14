@@ -32,7 +32,7 @@ endpoint=http://code.yourcompany.com/api/v3
 ```
 
 ## Behavior
-- First run of the new pipeline will be off of 'master' branch. This is prepare a setup base PR-Revision map. It also serves as sanity check for newly created pipeline.
+- First run of the new pipeline will be off of 'master' branch. This creates base PR-Revision map. It also serves as sanity check for newly created pipeline.
 - From then on, any new change (new PR create / new commits to existing PR) will trigger the new pipeline. Only the top commit in the PR will show up in build cause.
 - PR details (id, author etc.) will be available as environement variable for tasks to consume.
 
@@ -42,4 +42,7 @@ endpoint=http://code.yourcompany.com/api/v3
 - Add support for [Github's commit status](https://developer.github.com/v3/repos/statuses/) API to push build status to Github. May be a separate task/notification plugin?
 
 ## FAQs
+
+### Pull Request isn't being built
+We periodically poll for new PRs on the given repository. We build a pull request when it's first opened and when commits are added to the pull request throughout its lifetime. Rather than test the commits from the branches the pull request is sent from, we test the merge between the origin and the upstream branch.
 
