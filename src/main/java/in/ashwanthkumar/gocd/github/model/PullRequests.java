@@ -1,9 +1,6 @@
 package in.ashwanthkumar.gocd.github.model;
 
-import in.ashwanthkumar.utils.collections.Iterables;
-import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.func.Function;
-import in.ashwanthkumar.utils.func.Predicate;
 import in.ashwanthkumar.utils.lang.option.Option;
 import in.ashwanthkumar.utils.lang.tuple.Tuple2;
 
@@ -13,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import static in.ashwanthkumar.utils.collections.Iterables.toMap;
-import static in.ashwanthkumar.utils.collections.Lists.filter;
 import static in.ashwanthkumar.utils.collections.Lists.map;
 import static in.ashwanthkumar.utils.lang.option.Option.option;
 import static in.ashwanthkumar.utils.lang.tuple.Tuple2.tuple2;
@@ -35,27 +31,8 @@ public class PullRequests {
         return this;
     }
 
-    public PullRequests mergeWith(PullRequestStatus currentPullRequest, final MergeRefs mergeRefs) {
-        PullRequests newPullRequests = new PullRequests();
-        List<PullRequestStatus> prs = Lists.Nil();
-        if (hasId(currentPullRequest.getId())) {
-            prs.add(pullRequestStatuses.get(currentPullRequest.getId()).merge(currentPullRequest));
-        } else {
-            prs.add(currentPullRequest);
-        }
-
-        List<PullRequestStatus> purgedPRs = filter(concat(pullRequestStatuses.values(), prs), new Predicate<PullRequestStatus>() {
-            @Override
-            public Boolean apply(PullRequestStatus input) {
-                return mergeRefs.hasPullRequest(input.getId());
-            }
-        });
-        newPullRequests.setPullRequestStatuses(purgedPRs);
-        return newPullRequests;
-    }
-
     public <T> Iterable<T> concat(Collection<T> left, Collection<T> right) {
-        if(left == null) return right;
+        if (left == null) return right;
         else if (right == null) return left;
         else {
             ArrayList<T> concat = new ArrayList<T>();

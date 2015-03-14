@@ -8,37 +8,34 @@ import com.thoughtworks.go.plugin.api.annotation.Extension;
 import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
+import com.tw.go.plugin.GitHelper;
+import com.tw.go.plugin.HelperFactory;
+import com.tw.go.plugin.model.GitConfig;
+import com.tw.go.plugin.model.ModifiedFile;
+import com.tw.go.plugin.model.Revision;
+import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.json.JSONUtils;
-import in.ashwanthkumar.gocd.github.model.*;
-import in.ashwanthkumar.utils.collections.Lists;
-import in.ashwanthkumar.utils.collections.Maps;
+import in.ashwanthkumar.gocd.github.model.PullRequestStatus;
 import in.ashwanthkumar.utils.func.Function;
-import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jgit.lib.Ref;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static in.ashwanthkumar.gocd.github.GHUtils.buildGithubFromPropertyFile;
-import static in.ashwanthkumar.gocd.github.GHUtils.pullRequestIdFromRef;
 import static in.ashwanthkumar.gocd.github.GitConstants.PR_FETCH_REFSPEC;
+import static in.ashwanthkumar.gocd.github.GitConstants.PR_MERGE_PREFIX;
 import static java.util.Arrays.asList;
 
 @Extension
 public class GitHubPRBuildPlugin implements GoPlugin {
-    private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
-
     public static final String EXTENSION_NAME = "scm";
-    private static final List<String> goSupportedVersions = asList("1.0");
-
     public static final String REQUEST_SCM_CONFIGURATION = "scm-configuration";
     public static final String REQUEST_SCM_VIEW = "scm-view";
     public static final String REQUEST_VALIDATE_SCM_CONFIGURATION = "validate-scm-configuration";
@@ -46,10 +43,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     public static final String REQUEST_LATEST_REVISION = "latest-revision";
     public static final String REQUEST_LATEST_REVISIONS_SINCE = "latest-revisions-since";
     public static final String REQUEST_CHECKOUT = "checkout";
-
-    private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     public static final int SUCCESS_RESPONSE_CODE = 200;
     public static final int INTERNAL_ERROR_RESPONSE_CODE = 500;
+    private static final List<String> goSupportedVersions = asList("1.0");
+    private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
 
     @Override
     public void initializeGoApplicationAccessor(GoApplicationAccessor goApplicationAccessor) {
@@ -101,16 +99,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private GoPluginApiResponse handleSCMValidation(GoPluginApiRequest goPluginApiRequest) {
         final Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
+        final GitConfig gitConfig = getGitConfig(configuration);
 
         List<Map<String, Object>> response = new ArrayList<Map<String, Object>>();
         validate(response, new FieldValidator() {
             @Override
             public void validate(Map<String, Object> fieldValidation) {
-                String url = configuration.get("url");
-                if (url == null || url.trim().isEmpty() || !GHUtils.isValidGHUrl(url)) {
-                    fieldValidation.put("key", "url");
-                    fieldValidation.put("message", "Either url is empty / invalid.");
-                }
+                validateUrl(gitConfig, fieldValidation);
             }
         });
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
@@ -118,6 +113,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private GoPluginApiResponse handleSCMCheckConnection(GoPluginApiRequest goPluginApiRequest) {
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
+        GitConfig gitConfig = getGitConfig(configuration);
 
         Map<String, Object> response = new HashMap<String, Object>();
         ArrayList<String> messages = new ArrayList<String>();
@@ -133,99 +129,79 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             messages.add(e.getMessage());
         }
 
+        checkConnection(gitConfig, response, messages);
+
+        if (response.get("status") == null) {
+            response.put("status", "success");
+            messages.add("Could connect to URL successfully");
+        }
         response.put("messages", messages);
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
-    private GoPluginApiResponse handleGetLatestRevision(GoPluginApiRequest goPluginApiRequest) {
+    GoPluginApiResponse handleGetLatestRevision(GoPluginApiRequest goPluginApiRequest) {
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
-        String url = configuration.get("url");
+        GitConfig gitConfig = getGitConfig(configuration);
         String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
 
         LOGGER.debug("flyweight: " + flyweightFolder);
 
         try {
-            JGitHelper jGit = new JGitHelper();
-            jGit.cloneOrFetch(url, flyweightFolder);
-            Iterable<Ref> refs = jGit.refs(flyweightFolder);
-            String refsAvailableInTheRepository = Lists.mkString(refs);
-            LOGGER.info("Available refs - " + refsAvailableInTheRepository);
-            jGit.fetchRepository(url, flyweightFolder, PR_FETCH_REFSPEC);
-            MergeRefs mergeRefs = jGit.findMergeRef(flyweightFolder);
-            if (mergeRefs.isEmpty()) {
-                LOGGER.debug("handleGetLatestRevision# - No active PRs found. We're good");
-                return renderJSON(SUCCESS_RESPONSE_CODE, null);
-            }
-            Ref currentPullRequestRef = mergeRefs.head();
-            int currentPullRequestID = pullRequestIdFromRef(currentPullRequestRef);
-            PullRequestStatus currentPR = transformGHPullRequestToPullRequestStatus(currentPullRequestRef.getObjectId().name())
-                    .apply(pullRequestFrom(url, currentPullRequestID));
-            jGit.checkoutToRevision(flyweightFolder, currentPR.getMergeRef());
-            Revision revision = jGit.getLatestRevision(flyweightFolder);
+            GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
+            git.cloneOrFetch(PR_FETCH_REFSPEC);
+            Revision revision = git.getLatestRevision();
+            Map<String, String> prToRevisionMap = git.getBranchToRevisionMap(PR_MERGE_PREFIX);
 
-            if (revision == null) {
-                LOGGER.debug("handleGetLatestRevision# - No latest revision found");
-                return renderJSON(SUCCESS_RESPONSE_CODE, null);
-            } else {
-                Map<String, Object> revisionMap = getRevisionMap(revision, Lists.of(currentPR), currentPR);
-                LOGGER.info("Triggered build for PR#" + currentPR.getId() + " with head as " + currentPR.getMergeSHA());
-                return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
-            }
+            Map<String, Object> revisionMap = getRevisionMap(revision, prToRevisionMap, null);
+            LOGGER.info("Triggered build for master with head at " + revision.getRevision());
+            return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
         } catch (Throwable t) {
             LOGGER.warn("get latest revision: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
         }
     }
 
-    private GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
+    GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
-        String url = configuration.get("url");
+        GitConfig gitConfig = getGitConfig(configuration);
         String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
         Map<String, Object> previousRevisionMap = getMapFor(goPluginApiRequest, "previous-revision");
-        PullRequests activePullRequests = JSONUtils.fromJson(((Map<String, Object>) previousRevisionMap.get("data")).get("ACTIVE_PULL_REQUESTS").toString(), PullRequests.class);
+        Map<String, String> prStatuses = JSONUtils.fromJson((String) ((Map<String, Object>) previousRevisionMap.get("data")).get("ACTIVE_PULL_REQUESTS"), Map.class);
 
         try {
-            JGitHelper jGit = new JGitHelper();
-            LOGGER.debug("handleLatestRevisionSince# - Cloning / Fetching the latest for " + url);
-            jGit.cloneOrFetch(url, flyweightFolder);
-            LOGGER.debug("handleLatestRevisionSince# - Fetching all PR merge refs from remote - " + url);
-            jGit.fetchRepository(url, flyweightFolder, PR_FETCH_REFSPEC);
-            MergeRefs mergeRefs = jGit.findMergeRef(flyweightFolder);
-            Option<Ref> newPullRequest = mergeRefs.findNotProcessed(activePullRequests);
-            if (mergeRefs.isEmpty() || newPullRequest.isEmpty()) {
+            GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
+            LOGGER.debug("handleLatestRevisionSince# - Cloning / Fetching the latest for " + gitConfig.getUrl());
+            git.cloneOrFetch(PR_FETCH_REFSPEC);
+            Map<String, String> prToRevisionMap = git.getBranchToRevisionMap(PR_MERGE_PREFIX);
+            if (prToRevisionMap.isEmpty()) {
                 LOGGER.debug("handleLatestRevisionSince# - No active PRs found. We're good here.");
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             }
 
-            Ref currentPullRequestRef = newPullRequest.get();
-            int currentPullRequestID = pullRequestIdFromRef(currentPullRequestRef);
-            PullRequestStatus currentPR = transformGHPullRequestToPullRequestStatus(currentPullRequestRef.getObjectId().name())
-                    .apply(pullRequestFrom(url, currentPullRequestID));
-            jGit.cleanRepository(flyweightFolder);
-            jGit.checkoutToRevision(flyweightFolder, currentPR.getMergeRef());
-
-            List<Revision> newerRevisions;
-            if (activePullRequests.hasId(currentPR.getId()) && activePullRequests.get(currentPR.getId()).hasChanged(currentPR.getMergeSHA())) {
-                newerRevisions = jGit.getNewerRevisions(flyweightFolder, activePullRequests.get(currentPR.getId()).getLastHead());
-            } else {
-                newerRevisions = Lists.of(jGit.getLatestRevision(flyweightFolder));
+            Map<String, String> newerRevisions = new HashMap<String, String>();
+            for (String prId : prToRevisionMap.keySet()) {
+                if (prHasNewChange(prStatuses.get(prId), prToRevisionMap.get(prId))) {
+                    newerRevisions.put(prId, prToRevisionMap.get(prId));
+                }
             }
 
-            if (newerRevisions == null || newerRevisions.isEmpty()) {
+            if (newerRevisions.isEmpty()) {
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             } else {
+                LOGGER.warn("new commits: " + newerRevisions.size());
+
                 Map<String, Object> response = new HashMap<String, Object>();
                 List<Map> revisions = new ArrayList<Map>();
-                PullRequests pullRequestsToSave = activePullRequests.mergeWith(currentPR, mergeRefs);
-                LOGGER.debug("Custom Data bag to save in handleLatestRevisionSince");
-                LOGGER.debug(JSONUtils.toJson(pullRequestsToSave));
+                for (String prId : newerRevisions.keySet()) {
+                    int pullRequestID = Integer.parseInt(prId);
+                    String latestSHA = newerRevisions.get(prId);
+                    Revision revision = git.getDetailsForRevision(latestSHA);
+                    PullRequestStatus currentPR = transformGHPullRequestToPullRequestStatus(latestSHA).apply(pullRequestFrom(gitConfig, pullRequestID));
 
-                for (Revision revisionObj : newerRevisions) {
-                    Map<String, Object> revisionMap = getRevisionMap(revisionObj, pullRequestsToSave.getPullRequestStatuses(), currentPR);
+                    Map<String, Object> revisionMap = getRevisionMap(revision, prToRevisionMap, currentPR);
                     revisions.add(revisionMap);
                 }
                 response.put("revisions", revisions);
-                LOGGER.info("#handleLatestRevisionSince - Triggered build for PR#" + currentPR.getId() + " at " + currentPR.getMergeSHA());
                 return renderJSON(SUCCESS_RESPONSE_CODE, response);
             }
         } catch (Throwable t) {
@@ -234,9 +210,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
+    private boolean prHasNewChange(String previousSHA, String latestSHA) {
+        return previousSHA == null || !previousSHA.equals(latestSHA);
+    }
+
     private GoPluginApiResponse handleCheckout(GoPluginApiRequest goPluginApiRequest) {
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
-        String url = configuration.get("url");
+        GitConfig gitConfig = getGitConfig(configuration);
         String destinationFolder = (String) getValueFor(goPluginApiRequest, "destination-folder");
         Map<String, Object> revisionMap = getMapFor(goPluginApiRequest, "revision");
         String revision = (String) revisionMap.get("revision");
@@ -244,16 +224,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.warn("destination: " + destinationFolder + ". commit: " + revision);
 
         try {
-            JGitHelper jGit = new JGitHelper();
-            jGit.cloneOrFetch(url, destinationFolder);
-            jGit.fetchRepository(url, destinationFolder, PR_FETCH_REFSPEC);
-            jGit.checkoutToRevision(destinationFolder, revision);
+            GitHelper git = HelperFactory.git(gitConfig, new File(destinationFolder));
+            git.cloneOrFetch(PR_FETCH_REFSPEC);
+            git.resetHard(revision);
 
             Map<String, Object> response = new HashMap<String, Object>();
-            ArrayList<String> messages = new ArrayList<String>();
             response.put("status", "success");
-            messages.add("Checked out to revision " + revision);
-            response.put("messages", messages);
+            response.put("messages", Arrays.asList(String.format("Checked out to revision %s", revision)));
 
             return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } catch (Throwable t) {
@@ -262,9 +239,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    private GHPullRequest pullRequestFrom(String url, int currentPullRequestID) throws IOException {
+    private GHPullRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws IOException {
         return buildGithubFromPropertyFile()
-                .getRepository(GHUtils.parseGithubUrl(url))
+                .getRepository(GHUtils.parseGithubUrl(gitConfig.getUrl()))
                 .getPullRequest(currentPullRequestID);
     }
 
@@ -285,6 +262,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         };
     }
 
+    private GitConfig getGitConfig(Map<String, String> configuration) {
+        return new GitConfig(configuration.get("url"));
+    }
+
     private void validate(List<Map<String, Object>> response, FieldValidator fieldValidator) {
         Map<String, Object> fieldValidation = new HashMap<String, Object>();
         fieldValidator.validate(fieldValidation);
@@ -293,9 +274,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    private Map<String, Object> getRevisionMap(Revision revision, Iterable<PullRequestStatus> prStatuses, PullRequestStatus currentPR) {
+    Map<String, Object> getRevisionMap(Revision revision, Map<String, String> prStatuses, PullRequestStatus currentPR) {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("revision", revision.getRevision());
+        response.put("user", revision.getUser());
         response.put("timestamp", new SimpleDateFormat(DATE_PATTERN).format(revision.getTimestamp()));
         response.put("revisionComment", revision.getComment());
         List<Map> modifiedFilesMapList = new ArrayList<Map>();
@@ -305,19 +287,20 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             modifiedFileMap.put("action", modifiedFile.getAction());
             modifiedFilesMapList.add(modifiedFileMap);
         }
-        Map<String, String> customDataBag = Maps.<String, String>builder()
-                .put("ACTIVE_PULL_REQUESTS", JSONUtils.toJson(prStatuses))
-                .put("PR_ID", String.valueOf(currentPR.getId()))
-                .put("PR_BRANCH", String.valueOf(currentPR.getPrBranch()))
-                .put("TARGET_BRANCH", String.valueOf(currentPR.getToBranch()))
-                .put("PR_URL", String.valueOf(currentPR.getUrl()))
-                .put("PR_AUTHOR", currentPR.getAuthor())
-                .put("PR_AUTHOR_EMAIL", currentPR.getAuthorEmail())
-                .put("PR_DESCRIPTION", currentPR.getDescription())
-                .put("PR_TITLE", currentPR.getTitle())
-                .value();
-        response.put("data", customDataBag);
         response.put("modifiedFiles", modifiedFilesMapList);
+        Map<String, String> customDataBag = new HashMap<String, String>();
+        customDataBag.put("ACTIVE_PULL_REQUESTS", JSONUtils.toJson(prStatuses));
+        if (currentPR != null) {
+            customDataBag.put("PR_ID", String.valueOf(currentPR.getId()));
+            customDataBag.put("PR_BRANCH", String.valueOf(currentPR.getPrBranch()));
+            customDataBag.put("TARGET_BRANCH", String.valueOf(currentPR.getToBranch()));
+            customDataBag.put("PR_URL", String.valueOf(currentPR.getUrl()));
+            customDataBag.put("PR_AUTHOR", currentPR.getAuthor());
+            customDataBag.put("PR_AUTHOR_EMAIL", currentPR.getAuthorEmail());
+            customDataBag.put("PR_DESCRIPTION", currentPR.getDescription());
+            customDataBag.put("PR_TITLE", currentPR.getTitle());
+        }
+        response.put("data", customDataBag);
         return response;
     }
 
@@ -355,7 +338,38 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         return fieldProperties;
     }
 
-    private GoPluginApiResponse renderJSON(final int responseCode, Object response) {
+    public void validateUrl(GitConfig gitConfig, Map<String, Object> fieldMap) {
+        if (StringUtil.isEmpty(gitConfig.getUrl())) {
+            fieldMap.put("key", "url");
+            fieldMap.put("message", "URL is a required field");
+        } else if (!isValidURL(gitConfig)) {
+            fieldMap.put("key", "url");
+            fieldMap.put("message", "Invalid URL");
+        }
+    }
+
+    public void checkConnection(GitConfig gitConfig, Map<String, Object> response, ArrayList<String> messages) {
+        if (StringUtil.isEmpty(gitConfig.getUrl())) {
+            response.put("status", "failure");
+            messages.add("URL is empty");
+        } else if (!isValidURL(gitConfig)) {
+            response.put("status", "failure");
+            messages.add("Invalid URL");
+        } else {
+            try {
+                GitHub.connect().getRepository(GHUtils.parseGithubUrl(gitConfig.getUrl()));
+            } catch (Exception e) {
+                response.put("status", "failure");
+                messages.add(e.getMessage());
+            }
+        }
+    }
+
+    boolean isValidURL(GitConfig gitConfig) {
+        return new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(gitConfig.getUrl()) && GHUtils.isValidGHUrl(gitConfig.getUrl());
+    }
+
+    GoPluginApiResponse renderJSON(final int responseCode, Object response) {
         final String json = response == null ? null : JSONUtils.toJson(response);
         return new GoPluginApiResponse() {
             @Override
