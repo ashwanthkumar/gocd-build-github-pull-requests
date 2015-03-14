@@ -87,6 +87,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private GoPluginApiResponse handleSCMConfiguration() {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("url", createField("URL", null, true, true, false, "0"));
+        response.put("username", createField("Username", null, false, false, false, "1"));
+        response.put("password", createField("Password", null, false, false, true, "2"));
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
@@ -117,17 +119,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
         Map<String, Object> response = new HashMap<String, Object>();
         ArrayList<String> messages = new ArrayList<String>();
-        try {
-            GitHub.connect().getRepository(GHUtils.parseGithubUrl(configuration.get("url")));
-            response.put("status", "success");
-            messages.add("Could connect to URL successfully");
-        } catch (IOException e) {
-            response.put("status", "failure");
-            messages.add("Could not connect to URL");
-        } catch (Exception e) {
-            response.put("status", "failure");
-            messages.add(e.getMessage());
-        }
 
         checkConnection(gitConfig, response, messages);
 
@@ -241,7 +232,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private GHPullRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws IOException {
         return buildGithubFromPropertyFile()
-                .getRepository(GHUtils.parseGithubUrl(gitConfig.getUrl()))
+                .getRepository(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()))
                 .getPullRequest(currentPullRequestID);
     }
 
@@ -262,8 +253,22 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         };
     }
 
-    private GitConfig getGitConfig(Map<String, String> configuration) {
-        return new GitConfig(configuration.get("url"));
+    GitConfig getGitConfig(Map<String, String> configuration) {
+        String username = configuration.get("username");
+        String password = configuration.get("password");
+        try {
+            Properties props = GHUtils.readPropertyFile();
+            if (StringUtil.isEmpty(username)) {
+                username = props.getProperty("login");
+            }
+            if (StringUtil.isEmpty(password)) {
+                password = props.getProperty("password");
+            }
+        } catch (IOException e) {
+            // ignore
+        }
+        GitConfig gitConfig = new GitConfig(configuration.get("url"), username, password, null);
+        return gitConfig;
     }
 
     private void validate(List<Map<String, Object>> response, FieldValidator fieldValidator) {
@@ -357,7 +362,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             messages.add("Invalid URL");
         } else {
             try {
-                GitHub.connect().getRepository(GHUtils.parseGithubUrl(gitConfig.getUrl()));
+                GitHub.connect().getRepository(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()));
             } catch (Exception e) {
                 response.put("status", "failure");
                 messages.add(e.getMessage());

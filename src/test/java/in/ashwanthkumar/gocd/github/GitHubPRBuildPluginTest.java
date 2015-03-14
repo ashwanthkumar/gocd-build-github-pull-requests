@@ -3,6 +3,7 @@ package in.ashwanthkumar.gocd.github;
 import com.google.gson.Gson;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
+import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.Revision;
 import in.ashwanthkumar.gocd.github.model.PullRequestStatus;
 import org.apache.commons.io.FileUtils;
@@ -23,15 +24,56 @@ import static org.mockito.Mockito.*;
 
 public class GitHubPRBuildPluginTest {
     public static final String TEST_DIR = "/tmp/" + UUID.randomUUID();
+    public static File propertyFile;
+    public static boolean propertyFileExisted = false;
+    public static String usernameProperty;
+    public static String passwordProperty;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         FileUtils.deleteQuietly(new File(TEST_DIR));
+        propertyFile = new File(System.getProperty("user.home"), ".github");
+        if (propertyFile.exists()) {
+            propertyFileExisted = true;
+            Properties props = GHUtils.readPropertyFile();
+            usernameProperty = props.getProperty("login");
+            passwordProperty = props.getProperty("password");
+        } else {
+            usernameProperty = "props-username";
+            passwordProperty = "props-password";
+            FileUtils.writeStringToFile(propertyFile, "login=" + usernameProperty + "\npassword=" + passwordProperty);
+        }
     }
 
     @After
     public void tearDown() {
         FileUtils.deleteQuietly(new File(TEST_DIR));
+        if (!propertyFileExisted) {
+            FileUtils.deleteQuietly(propertyFile);
+        }
+    }
+
+    @Test
+    public void shouldBuildGitConfig() {
+        HashMap<String, String> configuration = new HashMap<String, String>();
+        configuration.put("url", "url");
+        configuration.put("username", "config-username");
+        configuration.put("password", "config-password");
+
+        GitConfig gitConfig = new GitHubPRBuildPlugin().getGitConfig(configuration);
+
+        assertThat(gitConfig.getUrl(), is("url"));
+        assertThat(gitConfig.getUsername(), is("config-username"));
+        assertThat(gitConfig.getPassword(), is("config-password"));
+
+        configuration.remove("username");
+        configuration.remove("password");
+
+        gitConfig = new GitHubPRBuildPlugin().getGitConfig(configuration);
+
+        assertThat(gitConfig.getUrl(), is("url"));
+        assertThat(gitConfig.getUsername(), is(usernameProperty));
+        assertThat(gitConfig.getPassword(), is(passwordProperty));
     }
 
     @Test

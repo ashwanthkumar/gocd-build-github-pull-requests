@@ -59,8 +59,17 @@ public class GHUtils {
     }
 
     public static GitHub buildGithubFromPropertyFile() throws IOException {
-        File homeDir = new File(System.getProperty("user.home"));
-        File propertyFile = new File(homeDir, ".github");
+        Properties props = readPropertyFile();
+        GitHubBuilder self = new GitHubBuilder();
+        self.withOAuthToken(props.getProperty("oauth"), props.getProperty("login"));
+        self.withPassword(props.getProperty("login"), props.getProperty("password"));
+        // For github enterprise you need to suffix /api/v3
+        self.withEndpoint(props.getProperty("endpoint", PUBLIC_GITHUB_ENDPOINT));
+        return self.build();
+    }
+
+    public static Properties readPropertyFile() throws IOException {
+        File propertyFile = new File(System.getProperty("user.home"), ".github");
         Properties props = new Properties();
         FileInputStream in = null;
         try {
@@ -69,11 +78,6 @@ public class GHUtils {
         } finally {
             IOUtils.closeQuietly(in);
         }
-        GitHubBuilder self = new GitHubBuilder();
-        self.withOAuthToken(props.getProperty("oauth"), props.getProperty("login"));
-        self.withPassword(props.getProperty("login"), props.getProperty("password"));
-        // For github enterprise you need to suffix /api/v3
-        self.withEndpoint(props.getProperty("endpoint", PUBLIC_GITHUB_ENDPOINT));
-        return self.build();
+        return props;
     }
 }
