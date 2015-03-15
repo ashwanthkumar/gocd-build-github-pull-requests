@@ -6,11 +6,13 @@
     <groupId>in.ashwanthkumar</groupId>
     <artifactId>gocd-github-pr-material</artifactId>
     <version>1.0-SNAPSHOT</version>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <go.version>14.4.0</go.version>
         <main.dir>${project.basedir}</main.dir>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>cd.go.plugin</groupId>
@@ -62,8 +64,31 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>github.pr</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <plugin.name>github-pr-poller</plugin.name>
+                <resource.directory>src/main/resources/github</resource.directory>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
-        <finalName>${project.artifactId}</finalName>
+        <finalName>${plugin.name}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources/views</directory>
+            </resource>
+            <resource>
+                <directory>${resource.directory}</directory>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -110,6 +135,5 @@
                 </executions>
             </plugin>
         </plugins>
-
     </build>
 </project>

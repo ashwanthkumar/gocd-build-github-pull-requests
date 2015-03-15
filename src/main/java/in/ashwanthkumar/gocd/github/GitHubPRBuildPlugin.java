@@ -15,12 +15,12 @@ import com.tw.go.plugin.model.Revision;
 import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
-import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -46,7 +46,15 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private Provider provider;
 
     public GitHubPRBuildPlugin() {
-        provider = new GitHubProvider();
+        try {
+            Properties properties = new Properties();
+            properties.load(getClass().getResourceAsStream("/defaults.properties"));
+            Class<?> providerClass = Class.forName(properties.getProperty("provider"));
+            Constructor<?> constructor = providerClass.getConstructor();
+            provider = (Provider) constructor.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("could not create provider", e);
+        }
     }
 
     @Override
@@ -95,7 +103,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private GoPluginApiResponse handleSCMView() throws IOException {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("displayValue", provider.getName());
-        response.put("template", IOUtils.toString(getClass().getResourceAsStream("/views/scm.template.html"), "UTF-8"));
+        response.put("template", IOUtils.toString(getClass().getResourceAsStream("/scm.template.html"), "UTF-8"));
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
