@@ -12,6 +12,7 @@ import com.tw.go.plugin.HelperFactory;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
+import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
@@ -247,11 +248,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("timestamp", new SimpleDateFormat(DATE_PATTERN).format(revision.getTimestamp()));
         response.put("revisionComment", revision.getComment());
         List<Map> modifiedFilesMapList = new ArrayList<Map>();
-        for (ModifiedFile modifiedFile : revision.getModifiedFiles()) {
-            Map<String, String> modifiedFileMap = new HashMap<String, String>();
-            modifiedFileMap.put("fileName", modifiedFile.getFileName());
-            modifiedFileMap.put("action", modifiedFile.getAction());
-            modifiedFilesMapList.add(modifiedFileMap);
+        if (!ListUtil.isEmpty(revision.getModifiedFiles())) {
+            for (ModifiedFile modifiedFile : revision.getModifiedFiles()) {
+                Map<String, String> modifiedFileMap = new HashMap<String, String>();
+                modifiedFileMap.put("fileName", modifiedFile.getFileName());
+                modifiedFileMap.put("action", modifiedFile.getAction());
+                modifiedFilesMapList.add(modifiedFileMap);
+            }
         }
         response.put("modifiedFiles", modifiedFilesMapList);
         Map<String, String> customDataBag = new HashMap<String, String>();
