@@ -83,6 +83,13 @@
                 <resource.directory>src/main/resources/git</resource.directory>
             </properties>
         </profile>
+        <profile>
+            <id>stash.pr</id>
+            <properties>
+                <plugin.name>stash-pr-poller</plugin.name>
+                <resource.directory>src/main/resources/stash</resource.directory>
+            </properties>
+        </profile>
     </profiles>
 
     <build>

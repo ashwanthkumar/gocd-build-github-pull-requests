@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<go-plugin id="stash.pr" version="1">
+    <about>
+        <name>Stash Pull Requests Builder</name>
+        <version>0.1</version>
+        <target-go-version>15.1.0</target-go-version>
+        <description>Plugin that polls a Stash repository for pull requests and triggers a build for each of them</description>
+        <vendor>
+            <name>Srinivas</name>
+            <url>https://github.com/ashwanthkumar/gocd-build-github-pull-requests</url>
+        </vendor>
+    </about>
+</go-plugin>
