@@ -5,7 +5,9 @@ import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.Revision;
-import in.ashwanthkumar.gocd.github.model.PullRequestStatus;
+import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
+import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
+import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -103,10 +105,12 @@ public class GitHubPRBuildPluginTest {
 
         pluginSpy.handleGetLatestRevision(request);
 
+        ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
+        ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
         ArgumentCaptor<Map> prStatuses = ArgumentCaptor.forClass(Map.class);
         ArgumentCaptor<PullRequestStatus> currentPR = ArgumentCaptor.forClass(PullRequestStatus.class);
-        verify(pluginSpy).getRevisionMap(revision.capture(), prStatuses.capture(), currentPR.capture());
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture(), prStatuses.capture());
 
         assertThat(revision.getValue().getRevision(), is("a683e0a27e66e710126f7697337efca052396a32"));
         assertThat(prStatuses.getValue().size(), is(1));
@@ -153,7 +157,7 @@ public class GitHubPRBuildPluginTest {
     }
 
     private void verifyResponse(String responseBody, List<Pair> pairs) {
-        List response = new Gson().fromJson(responseBody, List.class);
+        List response = (List) JSONUtils.fromJSON(responseBody);
         for (Object r : response) {
             System.out.println(r);
         }

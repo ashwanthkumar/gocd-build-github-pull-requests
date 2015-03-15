@@ -1,7 +1,6 @@
-package in.ashwanthkumar.gocd.github.model;
+package in.ashwanthkumar.gocd.github.provider.github.model;
 
-import in.ashwanthkumar.gocd.github.GitConstants;
-import in.ashwanthkumar.gocd.github.json.Exclude;
+import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
 
 public class PullRequestStatus {
     private int id;
@@ -10,25 +9,18 @@ public class PullRequestStatus {
     private String lastHead;
     // We use this to find changes in a PR
     private String mergeSHA;
-    @Exclude
     private String prBranch;
-    @Exclude
     private String toBranch;
-    @Exclude
     private String url;
-    @Exclude
     private String author;
-    @Exclude
     private String authorEmail;
-    @Exclude
     private String description;
-    @Exclude
     private String title;
 
     public PullRequestStatus(int id, String lastHead, String mergedSHA, String prBranch, String toBranch, String url,
                              String author, String authorEmail, String description, String title) {
         this.id = id;
-        this.mergeRef = String.format("%s%d", GitConstants.PR_MERGE_PREFIX , getId());
+        this.mergeRef = String.format("%s%d", GitHubProvider.PR_MERGE_PREFIX, getId());
         this.lastHead = lastHead;
         this.mergeSHA = mergedSHA;
         this.prBranch = prBranch;
