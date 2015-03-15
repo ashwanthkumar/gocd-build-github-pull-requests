@@ -76,6 +76,13 @@
                 <resource.directory>src/main/resources/github</resource.directory>
             </properties>
         </profile>
+        <profile>
+            <id>git.fb</id>
+            <properties>
+                <plugin.name>git-fb-poller</plugin.name>
+                <resource.directory>src/main/resources/git</resource.directory>
+            </properties>
+        </profile>
     </profiles>
 
     <build>
