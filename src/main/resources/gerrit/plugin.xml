@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<go-plugin id="gerrit.cs" version="1">
+    <about>
+        <name>Gerrit Change Set plugin</name>
+        <version>0.1</version>
+        <target-go-version>15.1.0</target-go-version>
+        <description>Provides ability to do change set builds for Gerrit repository</description>
+        <vendor>
+            <name>Srinivas</name>
+            <url>https://github.com/ashwanthkumar/gocd-build-github-pull-requests</url>
+        </vendor>
+    </about>
+</go-plugin>

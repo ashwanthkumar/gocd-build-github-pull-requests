@@ -90,6 +90,13 @@
                 <resource.directory>src/main/resources/stash</resource.directory>
             </properties>
         </profile>
+        <profile>
+            <id>gerrit.cs</id>
+            <properties>
+                <plugin.name>gerrit-cs-poller</plugin.name>
+                <resource.directory>src/main/resources/gerrit</resource.directory>
+            </properties>
+        </profile>
     </profiles>
 
     <build>
