@@ -38,9 +38,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     public static final String REQUEST_CHECKOUT = "checkout";
     public static final int SUCCESS_RESPONSE_CODE = 200;
     public static final int INTERNAL_ERROR_RESPONSE_CODE = 500;
+    public static final String BRANCH_TO_REVISION_MAP = "BRANCH_TO_REVISION_MAP";
     private static final List<String> goSupportedVersions = asList("1.0");
     private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-
     private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
 
     private Provider provider;
@@ -151,10 +151,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         try {
             GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
             git.cloneOrFetch(provider.getRefSpec());
-            Map<String, String> prToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
+            Map<String, String> branchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
             Revision revision = git.getLatestRevision();
 
-            Map<String, Object> revisionMap = getRevisionMap(gitConfig, "master", revision, prToRevisionMap);
+            Map<String, Object> revisionMap = getRevisionMap(gitConfig, "master", revision, branchToRevisionMap);
             LOGGER.info("Triggered build for master with head at " + revision.getRevision());
             return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
         } catch (Throwable t) {
@@ -168,23 +168,23 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         GitConfig gitConfig = getGitConfig(configuration);
         String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
         Map<String, Object> previousRevisionMap = getMapFor(goPluginApiRequest, "previous-revision");
-        Map<String, String> prStatuses = (Map<String, String>) JSONUtils.fromJSON((String) ((Map<String, Object>) previousRevisionMap.get("data")).get("ACTIVE_PULL_REQUESTS"));
-        LOGGER.debug("handleLatestRevisionSince# - Cloning / Fetching the latest for " + gitConfig.getUrl());
+        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) JSONUtils.fromJSON((String) ((Map<String, Object>) previousRevisionMap.get("data")).get("BRANCH_TO_REVISION_MAP"));
+        LOGGER.debug("handleLatestRevisionsSince# - Cloning / Fetching the latest for " + gitConfig.getUrl());
 
         try {
             GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
             git.cloneOrFetch(provider.getRefSpec());
-            Map<String, String> prToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
+            Map<String, String> newBranchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
 
-            if (prToRevisionMap.isEmpty()) {
+            if (newBranchToRevisionMap.isEmpty()) {
                 LOGGER.debug("handleLatestRevisionSince# - No active PRs found. We're good here.");
                 return renderJSON(SUCCESS_RESPONSE_CODE, null);
             }
 
             Map<String, String> newerRevisions = new HashMap<String, String>();
-            for (String prId : prToRevisionMap.keySet()) {
-                if (prHasNewChange(prStatuses.get(prId), prToRevisionMap.get(prId))) {
-                    newerRevisions.put(prId, prToRevisionMap.get(prId));
+            for (String branch : newBranchToRevisionMap.keySet()) {
+                if (branchHasNewChange(oldBranchToRevisionMap.get(branch), newBranchToRevisionMap.get(branch))) {
+                    newerRevisions.put(branch, newBranchToRevisionMap.get(branch));
                 }
             }
 
@@ -195,11 +195,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
                 Map<String, Object> response = new HashMap<String, Object>();
                 List<Map> revisions = new ArrayList<Map>();
-                for (String prId : newerRevisions.keySet()) {
-                    String latestSHA = newerRevisions.get(prId);
+                for (String branch : newerRevisions.keySet()) {
+                    String latestSHA = newerRevisions.get(branch);
                     Revision revision = git.getDetailsForRevision(latestSHA);
 
-                    Map<String, Object> revisionMap = getRevisionMap(gitConfig, prId, revision, prToRevisionMap);
+                    Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision, newBranchToRevisionMap);
                     revisions.add(revisionMap);
                 }
                 response.put("revisions", revisions);
@@ -211,7 +211,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    private boolean prHasNewChange(String previousSHA, String latestSHA) {
+    private boolean branchHasNewChange(String previousSHA, String latestSHA) {
         return previousSHA == null || !previousSHA.equals(latestSHA);
     }
 
@@ -253,7 +253,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    Map<String, Object> getRevisionMap(GitConfig gitConfig, String prId, Revision revision, Map<String, String> prStatuses) {
+    Map<String, Object> getRevisionMap(GitConfig gitConfig, String branch, Revision revision, Map<String, String> branchToRevisionMap) {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("revision", revision.getRevision());
         response.put("user", revision.getUser());
@@ -270,8 +270,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
         response.put("modifiedFiles", modifiedFilesMapList);
         Map<String, String> customDataBag = new HashMap<String, String>();
-        customDataBag.put("ACTIVE_PULL_REQUESTS", JSONUtils.toJSON(prStatuses));
-        provider.populateRevisionData(gitConfig, prId, revision.getRevision(), customDataBag);
+        customDataBag.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(branchToRevisionMap));
+        provider.populateRevisionData(gitConfig, branch, revision.getRevision(), customDataBag);
         response.put("data", customDataBag);
         return response;
     }
