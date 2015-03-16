@@ -15,8 +15,10 @@ import java.util.Map;
 import java.util.Properties;
 
 public class GitHubProvider implements Provider {
-    public static final String PR_FETCH_REFSPEC = "+refs/pull/*/merge:refs/gh-merge/remotes/origin/*";
-    public static final String PR_MERGE_PREFIX = "refs/gh-merge/remotes/origin/";
+    // public static final String PR_FETCH_REFSPEC = "+refs/pull/*/merge:refs/gh-merge/remotes/origin/*";
+    // public static final String PR_MERGE_PREFIX = "refs/gh-merge/remotes/origin/";
+    public static final String REF_SPEC = "+refs/pull/*/head:refs/remotes/origin/pull-request/*";
+    public static final String REF_PATTERN = "refs/remotes/origin/pull-request/";
     public static final String PUBLIC_GITHUB_ENDPOINT = "https://api.github.com";
 
     @Override
@@ -57,12 +59,12 @@ public class GitHubProvider implements Provider {
 
     @Override
     public String getRefSpec() {
-        return PR_FETCH_REFSPEC;
+        return REF_SPEC;
     }
 
     @Override
     public String getRefPattern() {
-        return PR_MERGE_PREFIX;
+        return REF_PATTERN;
     }
 
     @Override

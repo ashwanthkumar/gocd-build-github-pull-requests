@@ -20,7 +20,7 @@ public class PullRequestStatus {
     public PullRequestStatus(int id, String lastHead, String mergedSHA, String prBranch, String toBranch, String url,
                              String author, String authorEmail, String description, String title) {
         this.id = id;
-        this.mergeRef = String.format("%s%d", GitHubProvider.PR_MERGE_PREFIX, getId());
+        this.mergeRef = String.format("%s%d", GitHubProvider.REF_PATTERN, getId());
         this.lastHead = lastHead;
         this.mergeSHA = mergedSHA;
         this.prBranch = prBranch;

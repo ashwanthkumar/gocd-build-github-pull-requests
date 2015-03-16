@@ -92,6 +92,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         return new GoPluginIdentifier(EXTENSION_NAME, goSupportedVersions);
     }
 
+    void setProvider(Provider provider) {
+        this.provider = provider;
+    }
+
     private GoPluginApiResponse handleSCMConfiguration() {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("url", createField("URL", null, true, true, false, "0"));

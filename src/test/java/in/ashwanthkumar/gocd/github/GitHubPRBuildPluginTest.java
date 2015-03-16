@@ -6,7 +6,7 @@ import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.Revision;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
-import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
+import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -98,6 +97,7 @@ public class GitHubPRBuildPluginTest {
     @Test
     public void shouldGetLatestRevision() {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
+        plugin.setProvider(new GitHubProvider());
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
         GoPluginApiRequest request = mock(GoPluginApiRequest.class);
@@ -109,27 +109,40 @@ public class GitHubPRBuildPluginTest {
         ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
         ArgumentCaptor<Map> prStatuses = ArgumentCaptor.forClass(Map.class);
-        ArgumentCaptor<PullRequestStatus> currentPR = ArgumentCaptor.forClass(PullRequestStatus.class);
         verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture(), prStatuses.capture());
 
+        assertThat(prId.getValue(), is("master"));
         assertThat(revision.getValue().getRevision(), is("a683e0a27e66e710126f7697337efca052396a32"));
-        assertThat(prStatuses.getValue().size(), is(1));
-        assertThat(((Map<String, String>) prStatuses.getValue()).get("1"), is("aabd0f242bd40bfaaa4ce359123b2a2d976077d1"));
-        assertThat(currentPR.getValue(), is(nullValue()));
+        assertPRToRevisionMap(prStatuses);
     }
 
     @Ignore
     @Test
     public void shouldGetLatestRevisionSince() {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
+        plugin.setProvider(new GitHubProvider());
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
         GoPluginApiRequest request = mock(GoPluginApiRequest.class);
-        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, previous-revision: {revision: \"a683e0a27e66e710126f7697337efca052396a32\", data: {ACTIVE_PULL_REQUESTS: \"{1: \\\"aabd0f242bd40bfaaa4ce359123b2a2d976077d1\\\"}\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, previous-revision: {revision: \"a683e0a27e66e710126f7697337efca052396a32\", data: {ACTIVE_PULL_REQUESTS: \"{\\\"1\\\": \\\"12c6ef2ae9843842e4800f2c4763388db81d6ec7\\\"}\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
 
         pluginSpy.handleLatestRevisionSince(request);
 
-        verify(pluginSpy).renderJSON(eq(200), eq(nullValue()));
+        ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
+        ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
+        ArgumentCaptor<Map> prStatuses = ArgumentCaptor.forClass(Map.class);
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture(), prStatuses.capture());
+
+        assertThat(prId.getValue(), is("2"));
+        assertThat(revision.getValue().getRevision(), is("f985e61e556fc37f952385152d837de426b5cd8a"));
+        assertPRToRevisionMap(prStatuses);
+    }
+
+    private void assertPRToRevisionMap(ArgumentCaptor<Map> prStatuses) {
+        assertThat(prStatuses.getValue().size(), is(2));
+        assertThat(((Map<String, String>) prStatuses.getValue()).get("1"), is("12c6ef2ae9843842e4800f2c4763388db81d6ec7"));
+        assertThat(((Map<String, String>) prStatuses.getValue()).get("2"), is("f985e61e556fc37f952385152d837de426b5cd8a"));
     }
 
     // TODO - Write proper tests for the plugin
