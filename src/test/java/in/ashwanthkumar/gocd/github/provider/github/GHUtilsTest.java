@@ -1,10 +1,8 @@
-package in.ashwanthkumar.gocd.github;
+package in.ashwanthkumar.gocd.github.provider.github;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-
-import static in.ashwanthkumar.gocd.github.GHUtils.parseGithubUrl;
+import static in.ashwanthkumar.gocd.github.provider.github.GHUtils.parseGithubUrl;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -41,6 +39,4 @@ public class GHUtilsTest {
         assertThat(GHUtils.prIdFrom("https://github.com/phanan/htaccess/pull/133.diff"), is(133));
         assertThat(GHUtils.prIdFrom("https://github.com/phanan/htaccess/pull/1.diff"), is(1));
     }
-
-
 }

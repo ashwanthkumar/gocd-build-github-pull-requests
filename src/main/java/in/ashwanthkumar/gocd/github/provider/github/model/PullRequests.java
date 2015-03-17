@@ -1,4 +1,4 @@
-package in.ashwanthkumar.gocd.github.model;
+package in.ashwanthkumar.gocd.github.provider.github.model;
 
 import in.ashwanthkumar.utils.func.Function;
 import in.ashwanthkumar.utils.lang.option.Option;

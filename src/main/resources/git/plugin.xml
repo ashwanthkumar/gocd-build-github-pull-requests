@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<go-plugin id="git.fb" version="1">
+    <about>
+        <name>Git Feature Branch plugin</name>
+        <version>0.1</version>
+        <target-go-version>15.1.0</target-go-version>
+        <description>Provides ability to do feature branch builds for Git repository</description>
+        <vendor>
+            <name>Srinivas</name>
+            <url>https://github.com/ashwanthkumar/gocd-build-github-pull-requests</url>
+        </vendor>
+    </about>
+</go-plugin>

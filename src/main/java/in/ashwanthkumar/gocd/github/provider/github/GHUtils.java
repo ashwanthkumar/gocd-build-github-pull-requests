@@ -1,4 +1,4 @@
-package in.ashwanthkumar.gocd.github;
+package in.ashwanthkumar.gocd.github.provider.github;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.lib.Ref;
@@ -9,8 +9,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
-
-import static in.ashwanthkumar.gocd.github.GitConstants.PUBLIC_GITHUB_ENDPOINT;
 
 public class GHUtils {
     /**
@@ -64,7 +62,7 @@ public class GHUtils {
         self.withOAuthToken(props.getProperty("oauth"), props.getProperty("login"));
         self.withPassword(props.getProperty("login"), props.getProperty("password"));
         // For github enterprise you need to suffix /api/v3
-        self.withEndpoint(props.getProperty("endpoint", PUBLIC_GITHUB_ENDPOINT));
+        self.withEndpoint(props.getProperty("endpoint", GitHubProvider.PUBLIC_GITHUB_ENDPOINT));
         return self.build();
     }
 
