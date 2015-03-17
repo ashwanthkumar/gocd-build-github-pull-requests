@@ -61,7 +61,9 @@ public class GitHubPRBuildPluginTest {
         configuration.put("username", "config-username");
         configuration.put("password", "config-password");
 
-        GitConfig gitConfig = new GitHubPRBuildPlugin().getGitConfig(configuration);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
+        plugin.setProvider(new GitHubProvider());
+        GitConfig gitConfig = plugin.getGitConfig(configuration);
 
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is("config-username"));
@@ -70,7 +72,7 @@ public class GitHubPRBuildPluginTest {
         configuration.remove("username");
         configuration.remove("password");
 
-        gitConfig = new GitHubPRBuildPlugin().getGitConfig(configuration);
+        gitConfig = plugin.getGitConfig(configuration);
 
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is(usernameProperty));
@@ -108,12 +110,10 @@ public class GitHubPRBuildPluginTest {
         ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
         ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
-        ArgumentCaptor<Map> prStatuses = ArgumentCaptor.forClass(Map.class);
-        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture(), prStatuses.capture());
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture());
 
         assertThat(prId.getValue(), is("master"));
         assertThat(revision.getValue().getRevision(), is("a683e0a27e66e710126f7697337efca052396a32"));
-        assertPRToRevisionMap(prStatuses);
     }
 
     @Ignore
@@ -131,12 +131,10 @@ public class GitHubPRBuildPluginTest {
         ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
         ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
-        ArgumentCaptor<Map> prStatuses = ArgumentCaptor.forClass(Map.class);
-        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture(), prStatuses.capture());
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture());
 
         assertThat(prId.getValue(), is("2"));
         assertThat(revision.getValue().getRevision(), is("f985e61e556fc37f952385152d837de426b5cd8a"));
-        assertPRToRevisionMap(prStatuses);
     }
 
     private void assertPRToRevisionMap(ArgumentCaptor<Map> prStatuses) {
@@ -150,7 +148,9 @@ public class GitHubPRBuildPluginTest {
     private void verifyValidationSuccess(String url) {
         Map request = createRequestMap(Arrays.asList(new Pair("url", url)));
 
-        GoPluginApiResponse response = new GitHubPRBuildPlugin().handle(createGoPluginApiRequest(GitHubPRBuildPlugin.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
+        plugin.setProvider(new GitHubProvider());
+        GoPluginApiResponse response = plugin.handle(createGoPluginApiRequest(GitHubPRBuildPlugin.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
 
         verifyResponse(response.responseBody(), null);
     }

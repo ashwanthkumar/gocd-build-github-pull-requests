@@ -154,9 +154,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Map<String, String> branchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
             Revision revision = git.getLatestRevision();
 
-            Map<String, Object> revisionMap = getRevisionMap(gitConfig, "master", revision, branchToRevisionMap);
+            Map<String, Object> response = new HashMap<String, Object>();
+            Map<String, Object> revisionMap = getRevisionMap(gitConfig, "master", revision);
+            response.put("revision", revisionMap);
+            Map<String, String> scmDataMap = new HashMap<String, String>();
+            scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(branchToRevisionMap));
+            response.put("scm-data", scmDataMap);
             LOGGER.info("Triggered build for master with head at " + revision.getRevision());
-            return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
+            return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } catch (Throwable t) {
             LOGGER.warn("get latest revision: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
@@ -167,8 +172,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
         String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
-        Map<String, Object> previousRevisionMap = getMapFor(goPluginApiRequest, "previous-revision");
-        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) JSONUtils.fromJSON((String) ((Map<String, Object>) previousRevisionMap.get("data")).get("BRANCH_TO_REVISION_MAP"));
+        Map<String, String> scmData = (Map<String, String>) getValueFor(goPluginApiRequest, "scm-data");
+        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) JSONUtils.fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
         LOGGER.debug("handleLatestRevisionsSince# - Cloning / Fetching the latest for " + gitConfig.getUrl());
 
         try {
@@ -199,10 +204,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                     String latestSHA = newerRevisions.get(branch);
                     Revision revision = git.getDetailsForRevision(latestSHA);
 
-                    Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision, newBranchToRevisionMap);
+                    Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision);
                     revisions.add(revisionMap);
                 }
                 response.put("revisions", revisions);
+                Map<String, String> scmDataMap = new HashMap<String, String>();
+                scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(newBranchToRevisionMap));
+                response.put("scm-data", scmDataMap);
                 return renderJSON(SUCCESS_RESPONSE_CODE, response);
             }
         } catch (Throwable t) {
@@ -253,7 +261,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    Map<String, Object> getRevisionMap(GitConfig gitConfig, String branch, Revision revision, Map<String, String> branchToRevisionMap) {
+    Map<String, Object> getRevisionMap(GitConfig gitConfig, String branch, Revision revision) {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("revision", revision.getRevision());
         response.put("user", revision.getUser());
@@ -270,7 +278,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
         response.put("modifiedFiles", modifiedFilesMapList);
         Map<String, String> customDataBag = new HashMap<String, String>();
-        customDataBag.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(branchToRevisionMap));
         provider.populateRevisionData(gitConfig, branch, revision.getRevision(), customDataBag);
         response.put("data", customDataBag);
         return response;
