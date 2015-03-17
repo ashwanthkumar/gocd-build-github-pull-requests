@@ -100,7 +100,7 @@
     </profiles>
 
     <build>
-        <finalName>${plugin.name}</finalName>
+        <finalName>${plugin.name}-${version}</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources/views</directory>
