@@ -112,7 +112,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleSCMValidation(GoPluginApiRequest goPluginApiRequest) {
-        final Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
+        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        final Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         final GitConfig gitConfig = getGitConfig(configuration);
 
         List<Map<String, Object>> response = new ArrayList<Map<String, Object>>();
@@ -126,7 +127,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleSCMCheckConnection(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
+        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
 
         Map<String, Object> response = new HashMap<String, Object>();
@@ -143,9 +145,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GoPluginApiResponse handleGetLatestRevision(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
+        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
-        String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
+        String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.debug("flyweight: " + flyweightFolder);
 
         try {
@@ -154,9 +157,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Map<String, String> branchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
             Revision revision = git.getLatestRevision();
 
-            Map<String, Object> revisionMap = getRevisionMap(gitConfig, "master", revision, branchToRevisionMap);
+            Map<String, Object> response = new HashMap<String, Object>();
+            Map<String, Object> revisionMap = getRevisionMap(gitConfig, "master", revision);
+            response.put("revision", revisionMap);
+            Map<String, String> scmDataMap = new HashMap<String, String>();
+            scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(branchToRevisionMap));
+            response.put("scm-data", scmDataMap);
             LOGGER.info("Triggered build for master with head at " + revision.getRevision());
-            return renderJSON(SUCCESS_RESPONSE_CODE, revisionMap);
+            return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } catch (Throwable t) {
             LOGGER.warn("get latest revision: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
@@ -164,11 +172,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
+        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
-        String flyweightFolder = (String) getValueFor(goPluginApiRequest, "flyweight-folder");
-        Map<String, Object> previousRevisionMap = getMapFor(goPluginApiRequest, "previous-revision");
-        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) JSONUtils.fromJSON((String) ((Map<String, Object>) previousRevisionMap.get("data")).get("BRANCH_TO_REVISION_MAP"));
+        Map<String, String> scmData = (Map<String, String>) requestBodyMap.get("scm-data");
+        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) JSONUtils.fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
+        String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.debug("handleLatestRevisionsSince# - Cloning / Fetching the latest for " + gitConfig.getUrl());
 
         try {
@@ -199,10 +208,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                     String latestSHA = newerRevisions.get(branch);
                     Revision revision = git.getDetailsForRevision(latestSHA);
 
-                    Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision, newBranchToRevisionMap);
+                    Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision);
                     revisions.add(revisionMap);
                 }
                 response.put("revisions", revisions);
+                Map<String, String> scmDataMap = new HashMap<String, String>();
+                scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(newBranchToRevisionMap));
+                response.put("scm-data", scmDataMap);
                 return renderJSON(SUCCESS_RESPONSE_CODE, response);
             }
         } catch (Throwable t) {
@@ -216,10 +228,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleCheckout(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, String> configuration = keyValuePairs(goPluginApiRequest, "scm-configuration");
+        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
-        String destinationFolder = (String) getValueFor(goPluginApiRequest, "destination-folder");
-        Map<String, Object> revisionMap = getMapFor(goPluginApiRequest, "revision");
+        String destinationFolder = (String) requestBodyMap.get("destination-folder");
+        Map<String, Object> revisionMap = (Map<String, Object>) requestBodyMap.get("revision");
         String revision = (String) revisionMap.get("revision");
         LOGGER.warn("destination: " + destinationFolder + ". commit: " + revision);
 
@@ -253,7 +266,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    Map<String, Object> getRevisionMap(GitConfig gitConfig, String branch, Revision revision, Map<String, String> branchToRevisionMap) {
+    Map<String, Object> getRevisionMap(GitConfig gitConfig, String branch, Revision revision) {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("revision", revision.getRevision());
         response.put("user", revision.getUser());
@@ -270,27 +283,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
         response.put("modifiedFiles", modifiedFilesMapList);
         Map<String, String> customDataBag = new HashMap<String, String>();
-        customDataBag.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(branchToRevisionMap));
         provider.populateRevisionData(gitConfig, branch, revision.getRevision(), customDataBag);
         response.put("data", customDataBag);
         return response;
     }
 
-    private Map<String, Object> getMapFor(GoPluginApiRequest goPluginApiRequest, String field) {
-        Map<String, Object> map = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
-        Map<String, Object> fieldProperties = (Map<String, Object>) map.get(field);
-        return fieldProperties;
-    }
-
-    private Object getValueFor(GoPluginApiRequest goPluginApiRequest, String field) {
-        Map<String, Object> map = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
-        return map.get(field);
-    }
-
-    private Map<String, String> keyValuePairs(GoPluginApiRequest goPluginApiRequest, String mainKey) {
+    private Map<String, String> keyValuePairs(Map<String, Object> requestBodyMap, String mainKey) {
         Map<String, String> keyValuePairs = new HashMap<String, String>();
-        Map<String, Object> map = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
-        Map<String, Object> fieldsMap = (Map<String, Object>) map.get(mainKey);
+        Map<String, Object> fieldsMap = (Map<String, Object>) requestBodyMap.get(mainKey);
         for (String field : fieldsMap.keySet()) {
             Map<String, Object> fieldProperties = (Map<String, Object>) fieldsMap.get(field);
             String value = (String) fieldProperties.get("value");
