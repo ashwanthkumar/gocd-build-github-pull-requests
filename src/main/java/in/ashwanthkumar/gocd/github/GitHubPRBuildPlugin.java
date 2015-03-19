@@ -186,8 +186,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Map<String, String> newBranchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
 
             if (newBranchToRevisionMap.isEmpty()) {
-                LOGGER.debug("handleLatestRevisionSince# - No active PRs found. We're good here.");
-                return renderJSON(SUCCESS_RESPONSE_CODE, null);
+                LOGGER.debug("handleLatestRevisionSince - No active PRs found.");
+                Map<String, Object> response = new HashMap<String, Object>();
+                Map<String, String> scmDataMap = new HashMap<String, String>();
+                scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(newBranchToRevisionMap));
+                response.put("scm-data", scmDataMap);
+                return renderJSON(SUCCESS_RESPONSE_CODE, response);
             }
 
             Map<String, String> newerRevisions = new HashMap<String, String>();
@@ -198,11 +202,16 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             }
 
             if (newerRevisions.isEmpty()) {
-                return renderJSON(SUCCESS_RESPONSE_CODE, null);
+                LOGGER.debug("handleLatestRevisionSince - No updated PRs found.");
+
+                Map<String, Object> response = new HashMap<String, Object>();
+                Map<String, String> scmDataMap = new HashMap<String, String>();
+                scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(newBranchToRevisionMap));
+                response.put("scm-data", scmDataMap);
+                return renderJSON(SUCCESS_RESPONSE_CODE, response);
             } else {
                 LOGGER.info("new commits: " + newerRevisions.size());
 
-                Map<String, Object> response = new HashMap<String, Object>();
                 List<Map> revisions = new ArrayList<Map>();
                 for (String branch : newerRevisions.keySet()) {
                     String latestSHA = newerRevisions.get(branch);
@@ -211,6 +220,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                     Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision);
                     revisions.add(revisionMap);
                 }
+                Map<String, Object> response = new HashMap<String, Object>();
                 response.put("revisions", revisions);
                 Map<String, String> scmDataMap = new HashMap<String, String>();
                 scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(newBranchToRevisionMap));
