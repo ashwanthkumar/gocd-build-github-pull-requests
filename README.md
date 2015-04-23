@@ -1,7 +1,13 @@
 [![Build Status](https://snap-ci.com/ashwanthkumar/gocd-build-github-pull-requests/branch/master/build_image)](https://snap-ci.com/ashwanthkumar/gocd-build-github-pull-requests/branch/master)
 
-# GoCD - Build PR from Github
-This GoCD's SCM plugin polls the Github repository for Pull Requests (new PR/update to existing PRs) and triggers the build pipeline. [Discussion Thread](https://groups.google.com/d/topic/go-cd-dev/Rt_Y5G2VkOc/discussion)
+# GoCD - Git feature branch support
+This is a GoCD SCM plugin for Git feature branch support. [Discussion Thread](https://groups.google.com/d/topic/go-cd-dev/Rt_Y5G2VkOc/discussion)
+
+Supported (as seperate plugins):
+* Git repository for branches
+* Github repository for Pull Requests
+* Stash repository for Pull Requests
+* Gerrit repository for Change Sets
 
 ## Requirements
 This needs GoCD >= v15.x which is due release as of writing.
@@ -11,16 +17,23 @@ This needs GoCD >= v15.x which is due release as of writing.
 - Download the latest plugin jar from [Releases](https://github.com/ashwanthkumar/gocd-build-github-pull-requests/releases) section. Place it in `<go-server-location>/plugins/external` & restart Go Server.
 
 **Usage:**
-- Assuming you already have a pipeline "ProjectA" for one of your Github repos, 'Extract Template' from the pipeline (if its not templatized already)
-- Create new pipeline say "ProjectA-PullRequests" off of the extracted template. You can clone "ProjectA" pipeline to achieve this.
-- Select `Github` in Admin -> 'Pipeline' Configuration (ProjectA-PullRequests) -> 'Materials' Configuration -> 'Material' listing drop-down
+- Assuming you already have a pipeline "ProjectA" for one of your repos, 'Extract Template' from the pipeline (if its not templatized already)
+- Create new pipeline say "ProjectA-FeatureBranch" off of the extracted template (you can clone "ProjectA" pipeline to achieve this)
+- Select `Git Feature Branch`/`Github`/`Stash`/`Gerrit` in Admin -> 'Pipeline' Configuration (ProjectA-FeatureBranch) -> 'Materials' Configuration -> 'Material' listing drop-down
+
+### Github
 
 **Authentication:**
-- You can choose to provide `username` & `password` through Go Config XML
-- (or) Create a file `~/.github` with the following contents: (Note: `~/.github` needs to be available on Go Server and on all Go Agent machines)
+- You can create a file `~/.github` with the following contents: (Note: `~/.github` needs to be available on Go Server and on all Go Agent machines)
 ```
 login=johndoe
 password=thisaintapassword
+```
+
+- You can also generate & use oauth token. To do so create a file `~/.github` with the following contents: (Note: `~/.github` needs to be available on Go Server and on all Go Agent machines)
+```
+login=johndoe
+oauth=thisaintatoken
 ```
 
 **Github Enterprise:**
@@ -36,15 +49,14 @@ endpoint=http://code.yourcompany.com/api/v3
 - From then on, any new change (new PR create / new commits to existing PR) will trigger the new pipeline. Only the top commit in the PR will show up in build cause.
 - PR details (id, author etc.) will be available as environement variable for tasks to consume.
 
+You can use [GoCD build status notifier](https://github.com/srinivasupadhya/gocd-build-status-notifier) to update status of Pull Requests with build status.
+
 ## To Dos
 - Clean up the code esp. the JSON SerDe part
 - Add proper tests around the plugin
-- Add support for [Github's commit status](https://developer.github.com/v3/repos/statuses/) API to push build status to Github. May be a separate task/notification plugin?
 
 ## FAQs
 
 ### Pull Request isn't being built
-- We periodically poll for new PRs on the given repository. We build a pull request when it's first opened and when commits are added to the pull request throughout its lifetime. Rather than test the commits from the branches the pull request is sent from, we test the merge between the origin and the upstream branch.
-- If a pull request isn't built, that usually means that it can't be merged. We rely on the merge commit that GitHub transparently creates between the changes in the source branch and the upstream branch the pull request is sent against.
-- So when you create or update a pull request, and Go doesn't create a build for it, make sure the pull request is mergeable. If it isn't, rebase it against the upstream branch and resolve any merge conflicts.
+- If more than 1 PR gets updated (create/update) Go bunches them together for the next pipeline run & uses the top change in the "build-cause" to build. You can force trigger pipeline with other revisions until this get fixed ([thread](https://github.com/gocd/gocd/issues/938)).
 
