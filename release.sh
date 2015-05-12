@@ -2,6 +2,10 @@
 rm -rf dist/
 mkdir dist
 
+cd ../git-cmd
+mvn clean install -DskipTests
+
+cd ../gocd-build-github-pull-requests
 mvn clean install -DskipTests -P github.pr
 cp target/github-pr-poller*.jar dist/
 

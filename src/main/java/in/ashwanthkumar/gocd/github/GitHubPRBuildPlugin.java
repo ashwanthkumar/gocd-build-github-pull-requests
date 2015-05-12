@@ -149,7 +149,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
-        LOGGER.debug("flyweight: " + flyweightFolder);
+        LOGGER.info(String.format("Flyweight: %s", flyweightFolder));
 
         try {
             GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
@@ -163,7 +163,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Map<String, String> scmDataMap = new HashMap<String, String>();
             scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(branchToRevisionMap));
             response.put("scm-data", scmDataMap);
-            LOGGER.info("Triggered build for master with head at " + revision.getRevision());
+            LOGGER.info(String.format("Triggered build for master with head at %s", revision.getRevision()));
             return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } catch (Throwable t) {
             LOGGER.warn("get latest revision: ", t);
@@ -178,7 +178,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, String> scmData = (Map<String, String>) requestBodyMap.get("scm-data");
         Map<String, String> oldBranchToRevisionMap = (Map<String, String>) JSONUtils.fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
-        LOGGER.debug("handleLatestRevisionsSince# - Cloning / Fetching the latest for " + gitConfig.getUrl());
+        LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
 
         try {
             GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
@@ -186,7 +186,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Map<String, String> newBranchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
 
             if (newBranchToRevisionMap.isEmpty()) {
-                LOGGER.debug("handleLatestRevisionSince - No active PRs found.");
+                LOGGER.debug("No active PRs found.");
                 Map<String, Object> response = new HashMap<String, Object>();
                 Map<String, String> scmDataMap = new HashMap<String, String>();
                 scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(newBranchToRevisionMap));
@@ -202,7 +202,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             }
 
             if (newerRevisions.isEmpty()) {
-                LOGGER.debug("handleLatestRevisionSince - No updated PRs found.");
+                LOGGER.debug(String.format("No updated PRs found. Old: %s New: %s", oldBranchToRevisionMap, newBranchToRevisionMap));
 
                 Map<String, Object> response = new HashMap<String, Object>();
                 Map<String, String> scmDataMap = new HashMap<String, String>();
@@ -210,7 +210,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 response.put("scm-data", scmDataMap);
                 return renderJSON(SUCCESS_RESPONSE_CODE, response);
             } else {
-                LOGGER.info("new commits: " + newerRevisions.size());
+                LOGGER.info(String.format("new commits: %d", newerRevisions.size()));
 
                 List<Map> revisions = new ArrayList<Map>();
                 for (String branch : newerRevisions.keySet()) {
@@ -244,7 +244,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         String destinationFolder = (String) requestBodyMap.get("destination-folder");
         Map<String, Object> revisionMap = (Map<String, Object>) requestBodyMap.get("revision");
         String revision = (String) revisionMap.get("revision");
-        LOGGER.warn("destination: " + destinationFolder + ". commit: " + revision);
+        LOGGER.info(String.format("destination: %s. commit: %s", destinationFolder, revision));
 
         try {
             GitHelper git = HelperFactory.git(gitConfig, new File(destinationFolder));
