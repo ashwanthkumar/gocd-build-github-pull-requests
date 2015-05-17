@@ -10,16 +10,19 @@ Supported (as seperate plugins):
 * Gerrit repository for Change Sets
 
 ## Requirements
-This needs GoCD >= v15.x which is due release as of writing.
+These plugins require GoCD version v15.x or above.
 
 ## Get Started
 **Installation:**
-- Download the latest plugin jar from [Releases](https://github.com/ashwanthkumar/gocd-build-github-pull-requests/releases) section. Place it in `<go-server-location>/plugins/external` & restart Go Server.
+- Download the latest plugin jar from the [Releases](https://github.com/ashwanthkumar/gocd-build-github-pull-requests/releases) section. Place it in `<go-server-location>/plugins/external` & restart Go Server. You can find the location of the Go Server installation [here](http://www.go.cd/documentation/user/current/installation/installing_go_server.html#location-of-files-after-installation-of-go-server).
 
 **Usage:**
-- Assuming you already have a pipeline "ProjectA" for one of your repos, 'Extract Template' from the pipeline (if its not templatized already)
-- Create new pipeline say "ProjectA-FeatureBranch" off of the extracted template (you can clone "ProjectA" pipeline to achieve this)
-- Select `Git Feature Branch`/`Github`/`Stash`/`Gerrit` in Admin -> 'Pipeline' Configuration (ProjectA-FeatureBranch) -> 'Materials' Configuration -> 'Material' listing drop-down
+
+1. Assuming you already have a pipeline "ProjectA" for one of your repos, 'Extract Template' from the pipeline (if its not templatized already).
+2. Create new pipeline say "ProjectA-FeatureBranch" off of the extracted template (you can clone "ProjectA" pipeline to achieve this).
+3. In the materials configuration for your newly created pipeline, you will see that there is a new material for each of the plugins you have installed (Git Feature Branch, Github, Stash or Gerrit).
+4. Select one of these new materials, fill in the details and the plugin will build the pull requests from the given material.
+5. You can delete the old material that is left over from cloning your pipeline.
 
 ### Github
 
@@ -42,6 +45,20 @@ oauth=thisaintatoken
 # for enterprise installations - Make sure to add /api/v3 to the hostname
 # ignore this field or have the value to https://api.github.com
 endpoint=http://code.yourcompany.com/api/v3
+```
+
+### Stash
+**Authentication**
+
+If authentication is required, place a file named `.netrc` under the Go user's home directory. The file needs to be created in both the server and any number of agents that will build this material. You can find the home directory for Go server [here](http://www.go.cd/documentation/user/current/installation/installing_go_server.html#location-of-files-after-installation-of-go-server) and for Go Agent
+[here](http://www.go.cd/documentation/user/current/installation/installing_go_agent.html#location-of-files-after-installing-go-agent).
+
+The `.netrc` file takes the following format:
+
+```
+machine stash.vm.com 
+login myusername
+password mypassword
 ```
 
 ## Behavior
