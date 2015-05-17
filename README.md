@@ -22,7 +22,7 @@ These plugins require GoCD version v15.x or above.
 2. Create new pipeline say "ProjectA-FeatureBranch" off of the extracted template (you can clone "ProjectA" pipeline to achieve this).
 3. In the materials configuration for your newly created pipeline, you will see that there is a new material for each of the plugins you have installed (Git Feature Branch, Github, Stash or Gerrit).
 4. Select one of these new materials, fill in the details and the plugin will build the pull requests from the given material.
-
+5. You can delete the old material that is left over from cloning your pipeline.
 
 ### Github
 
