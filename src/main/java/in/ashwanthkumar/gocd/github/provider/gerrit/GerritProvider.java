@@ -8,7 +8,7 @@ import org.apache.commons.validator.routines.UrlValidator;
 import java.util.Map;
 
 public class GerritProvider implements Provider {
-    public static final String REF_SPEC = "refs/changes/*:refs/changes/*";
+    public static final String REF_SPEC = "+refs/changes/*:refs/changes/*";
     public static final String REF_PATTERN = "refs/changes/";
 
     @Override
