@@ -6,6 +6,7 @@ import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
 import in.ashwanthkumar.gocd.github.util.URLUtils;
 import in.ashwanthkumar.utils.func.Function;
+import in.ashwanthkumar.utils.lang.StringUtils;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
@@ -51,7 +52,7 @@ public class GitHubProvider implements Provider {
     @Override
     public void checkConnection(GitConfig gitConfig) {
         try {
-            GitHub.connect().getRepository(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()));
+            loginWith(gitConfig).getRepository(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()));
         } catch (Exception e) {
             throw new RuntimeException(String.format("check connection failed. %s", e.getMessage()), e);
         }
@@ -90,7 +91,7 @@ public class GitHubProvider implements Provider {
     }
 
     private GHPullRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws IOException {
-        return GHUtils.buildGithubFromPropertyFile()
+        return loginWith(gitConfig)
                 .getRepository(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()))
                 .getPullRequest(currentPullRequestID);
     }
@@ -110,5 +111,14 @@ public class GitHubProvider implements Provider {
                 }
             }
         };
+    }
+
+    private GitHub loginWith(GitConfig gitConfig) throws IOException {
+        if(hasCredentials(gitConfig)) return GitHub.connectUsingPassword(gitConfig.getUsername(), gitConfig.getPassword());
+        else return GitHub.connect();
+    }
+
+    private boolean hasCredentials(GitConfig gitConfig) {
+        return StringUtils.isNotEmpty(gitConfig.getUsername()) && StringUtils.isNotEmpty(gitConfig.getPassword());
     }
 }
