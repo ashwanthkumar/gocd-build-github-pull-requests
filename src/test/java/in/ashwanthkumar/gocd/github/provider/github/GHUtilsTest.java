@@ -22,6 +22,7 @@ public class GHUtilsTest {
         assertThat(parseGithubUrl("https://Github.Com/ashwanthkumar/gocd-build-github-pull-requests"), is("ashwanthkumar/gocd-build-github-pull-requests"));
         assertThat(parseGithubUrl("https://Github.Com/Ashwanthkumar/gocd-build-github-pull-requests"), is("Ashwanthkumar/gocd-build-github-pull-requests"));
         assertThat(parseGithubUrl("http://code.corp.yourcompany.com:username/repo"), is("username/repo"));
+        assertThat(parseGithubUrl("https://github.company.com/user/test-repo.git"), is("user/test-repo"));
     }
 
     @Test
