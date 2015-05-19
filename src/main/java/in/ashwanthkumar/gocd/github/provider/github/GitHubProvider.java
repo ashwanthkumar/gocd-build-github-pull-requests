@@ -4,8 +4,8 @@ import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
+import in.ashwanthkumar.gocd.github.util.URLUtils;
 import in.ashwanthkumar.utils.func.Function;
-import org.apache.commons.validator.routines.UrlValidator;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
@@ -45,7 +45,7 @@ public class GitHubProvider implements Provider {
     public boolean isValidURL(String url) {
         if (StringUtil.isEmpty(url))
             return false;
-        return new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(url) || GHUtils.isValidSSHUrl(url);
+        return new URLUtils().isValidURL(url) || GHUtils.isValidSSHUrl(url);
     }
 
     @Override
