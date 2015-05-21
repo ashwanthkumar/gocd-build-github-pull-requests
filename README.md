@@ -18,11 +18,39 @@ These plugins require GoCD version v15.x or above.
 
 **Usage:**
 
-1. Assuming you already have a pipeline "ProjectA" for one of your repos, 'Extract Template' from the pipeline (if its not templatized already).
-2. Create new pipeline say "ProjectA-FeatureBranch" off of the extracted template (you can clone "ProjectA" pipeline to achieve this).
-3. In the materials configuration for your newly created pipeline, you will see that there is a new material for each of the plugins you have installed (Git Feature Branch, Github, Stash or Gerrit).
-4. Select one of these new materials, fill in the details and the plugin will build the pull requests from the given material.
-5. You can delete the old material that is left over from cloning your pipeline.
+* Make sure plugins are loaded. Note: You can use [GoCD build status notifier](https://github.com/srinivasupadhya/gocd-build-status-notifier) to update status of Pull Requests with build status.
+![Plugins listing page][1]
+
+* Assuming you already have a pipeline "ProjectA" for one of your repos
+![Original pipeline][2]
+![Original pipeline material listing page][3]
+
+* 'Extract Template' from the pipeline, if its not templatized already (this is optional step) 
+![Pipelines listing page][4]
+![Extract template pop-up][5]
+
+* Create new pipeline say "ProjectA-FeatureBranch" off of the extracted template. You can clone "ProjectA" pipeline to achieve this.
+![Pipelines listing page after extract template][6]
+![Clone pipeline pop-up][7]
+
+* In the materials configuration for your newly created pipeline, you will see that there is a new material for each of the plugins you have installed (Git Feature Branch, Github, Stash or Gerrit). Select one of these new materials, fill in the details and the plugin will build the pull requests from the given material.
+![Select GitHub drop-down][8]
+![Add GitHub drop-down][9]
+![New pipeline material listing page][10]
+
+* You can delete the old material that is left over from cloning your pipeline.
+![Delete old material pop-up][11]
+
+## Behavior
+- First run of the new pipeline will be off of 'master' branch. This creates base PR-Revision map. It also serves as sanity check for newly created pipeline.
+
+- From then on, any new change (new PR create / new commits to existing PR) will trigger the new pipeline. Only the top commit in the PR will show up in build cause.
+![New pipeine schedule][12]
+
+- PR details (id, author etc.) will be available as environement variable for tasks to consume.
+
+- Build status notifier plugin will update Pull Request with build status
+![On successful run of new pipeline][13]
 
 ### Github
 
@@ -61,13 +89,6 @@ login myusername
 password mypassword
 ```
 
-## Behavior
-- First run of the new pipeline will be off of 'master' branch. This creates base PR-Revision map. It also serves as sanity check for newly created pipeline.
-- From then on, any new change (new PR create / new commits to existing PR) will trigger the new pipeline. Only the top commit in the PR will show up in build cause.
-- PR details (id, author etc.) will be available as environement variable for tasks to consume.
-
-You can use [GoCD build status notifier](https://github.com/srinivasupadhya/gocd-build-status-notifier) to update status of Pull Requests with build status.
-
 ## To Dos
 - Clean up the code esp. the JSON SerDe part
 - Add proper tests around the plugin
@@ -77,3 +98,16 @@ You can use [GoCD build status notifier](https://github.com/srinivasupadhya/gocd
 ### Pull Request isn't being built
 - If more than 1 PR gets updated (create/update) Go bunches them together for the next pipeline run & uses the top change in the "build-cause" to build. You can force trigger pipeline with other revisions until this get fixed ([thread](https://github.com/gocd/gocd/issues/938)).
 
+[1]: images/list-plugin.png  "List Plugin"
+[2]: images/original-pipeline.png  "Original Pipeline"
+[3]: images/original-pipeline-material.png  "Original Pipeline Material"
+[4]: images/list-pipeline.png  "List Pipeline"
+[5]: images/extract-template.png  "Extract Template"
+[6]: images/list-pipeline-after-extract-template.png  "List Pipeline After Extract Template"
+[7]: images/clone-pipeline.png  "Clone Pipeline"
+[8]: images/select-github-material.png  "Select GitHub Material"
+[9]: images/add-github-material.png  "Add GitHub Material"
+[10]: images/new-pipeline-material.png  "New Pipeline Material"
+[11]: images/delete-old-material.png  "Delete Old Material"
+[12]: images/pipeline-schedule.png  "Pipeline Schedule"
+[13]: images/on-successful-pipeline-run.png  "On Successful Run"
