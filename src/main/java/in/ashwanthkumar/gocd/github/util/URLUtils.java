@@ -8,8 +8,8 @@ public class URLUtils {
         boolean isValid = true;
         try {
             URL urlObj = new URL(url);
-            URLConnection conn = urlObj.openConnection();
-            conn.connect();
+            URLConnection connection = urlObj.openConnection();
+            connection.connect();
         } catch (Exception e) {
             isValid = false;
         }
