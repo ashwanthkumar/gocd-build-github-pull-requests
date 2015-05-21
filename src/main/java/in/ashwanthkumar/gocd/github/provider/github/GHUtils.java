@@ -50,22 +50,6 @@ public class GHUtils {
         return Integer.parseInt(diffUrl.substring(diffUrl.indexOf("/pull/") + 6, diffUrl.length() - 5));
     }
 
-    public static int pullRequestIdFromRef(Ref prRef) {
-        // generally of the form refs/gh-merge/remotes/origin/3
-        String idInString = prRef.getName().split("/")[4];
-        return Integer.valueOf(idInString);
-    }
-
-    public static GitHub buildGithubFromPropertyFile() throws IOException {
-        Properties props = readPropertyFile();
-        GitHubBuilder self = new GitHubBuilder();
-        self.withOAuthToken(props.getProperty("oauth"), props.getProperty("login"));
-        self.withPassword(props.getProperty("login"), props.getProperty("password"));
-        // For github enterprise you need to suffix /api/v3
-        self.withEndpoint(props.getProperty("endpoint", GitHubProvider.PUBLIC_GITHUB_ENDPOINT));
-        return self.build();
-    }
-
     public static Properties readPropertyFile() throws IOException {
         File propertyFile = new File(System.getProperty("user.home"), ".github");
         Properties props = new Properties();
