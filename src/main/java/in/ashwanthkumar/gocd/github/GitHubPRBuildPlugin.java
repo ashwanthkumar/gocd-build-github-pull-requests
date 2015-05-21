@@ -28,7 +28,11 @@ import static java.util.Arrays.asList;
 
 @Extension
 public class GitHubPRBuildPlugin implements GoPlugin {
+    private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
+
     public static final String EXTENSION_NAME = "scm";
+    private static final List<String> goSupportedVersions = asList("1.0");
+
     public static final String REQUEST_SCM_CONFIGURATION = "scm-configuration";
     public static final String REQUEST_SCM_VIEW = "scm-view";
     public static final String REQUEST_VALIDATE_SCM_CONFIGURATION = "validate-scm-configuration";
@@ -36,12 +40,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     public static final String REQUEST_LATEST_REVISION = "latest-revision";
     public static final String REQUEST_LATEST_REVISIONS_SINCE = "latest-revisions-since";
     public static final String REQUEST_CHECKOUT = "checkout";
-    public static final int SUCCESS_RESPONSE_CODE = 200;
-    public static final int INTERNAL_ERROR_RESPONSE_CODE = 500;
+
     public static final String BRANCH_TO_REVISION_MAP = "BRANCH_TO_REVISION_MAP";
-    private static final List<String> goSupportedVersions = asList("1.0");
     private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
+
+    public static final int SUCCESS_RESPONSE_CODE = 200;
+    public static final int NOT_FOUND_RESPONSE_CODE = 404;
+    public static final int INTERNAL_ERROR_RESPONSE_CODE = 500;
 
     private Provider provider;
 
@@ -71,7 +76,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 return handleSCMView();
             } catch (IOException e) {
                 String message = "Failed to find template: " + e.getMessage();
-                return renderJSON(500, message);
+                return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, message);
             }
         } else if (goPluginApiRequest.requestName().equals(REQUEST_VALIDATE_SCM_CONFIGURATION)) {
             return handleSCMValidation(goPluginApiRequest);
@@ -84,7 +89,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         } else if (goPluginApiRequest.requestName().equals(REQUEST_CHECKOUT)) {
             return handleCheckout(goPluginApiRequest);
         }
-        return null;
+        return renderJSON(NOT_FOUND_RESPONSE_CODE, null);
     }
 
     @Override
@@ -107,7 +112,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private GoPluginApiResponse handleSCMView() throws IOException {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("displayValue", provider.getName());
-        response.put("template", IOUtils.toString(getClass().getResourceAsStream("/scm.template.html"), "UTF-8"));
+        response.put("template", getFileContents("/scm.template.html"));
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
@@ -345,6 +350,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 messages.add(e.getMessage());
             }
         }
+    }
+
+    private String getFileContents(String filePath) throws IOException {
+        return IOUtils.toString(getClass().getResourceAsStream(filePath), "UTF-8");
     }
 
     GoPluginApiResponse renderJSON(final int responseCode, Object response) {
