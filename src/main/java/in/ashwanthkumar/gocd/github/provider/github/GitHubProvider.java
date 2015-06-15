@@ -70,16 +70,14 @@ public class GitHubProvider implements Provider {
 
     @Override
     public void populateRevisionData(GitConfig gitConfig, String prId, String prSHA, Map<String, String> data) {
+        data.put("PR_ID", prId);
+
         PullRequestStatus prStatus = null;
-        try {
-            GHPullRequest currentPR = pullRequestFrom(gitConfig, Integer.parseInt(prId));
-            prStatus = transformGHPullRequestToPullRequestStatus(prSHA).apply(currentPR);
-        } catch (Exception e) {
-            // ignore
+        if (!System.getProperty("go.plugin.github.pr.populate-details", "Y").equals("N")) {
+            prStatus = getPullRequestStatus(gitConfig, prId, prSHA);
         }
 
         if (prStatus != null) {
-            data.put("PR_ID", String.valueOf(prStatus.getId()));
             data.put("PR_BRANCH", String.valueOf(prStatus.getPrBranch()));
             data.put("TARGET_BRANCH", String.valueOf(prStatus.getToBranch()));
             data.put("PR_URL", String.valueOf(prStatus.getUrl()));
@@ -88,6 +86,16 @@ public class GitHubProvider implements Provider {
             data.put("PR_DESCRIPTION", prStatus.getDescription());
             data.put("PR_TITLE", prStatus.getTitle());
         }
+    }
+
+    private PullRequestStatus getPullRequestStatus(GitConfig gitConfig, String prId, String prSHA) {
+        try {
+            GHPullRequest currentPR = pullRequestFrom(gitConfig, Integer.parseInt(prId));
+            return transformGHPullRequestToPullRequestStatus(prSHA).apply(currentPR);
+        } catch (Exception e) {
+            // ignore
+        }
+        return null;
     }
 
     private GHPullRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws IOException {
