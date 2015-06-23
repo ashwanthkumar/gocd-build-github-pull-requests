@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static in.ashwanthkumar.gocd.github.provider.github.GHUtils.parseGithubUrl;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class GHUtilsTest {
     @Test
@@ -23,15 +23,6 @@ public class GHUtilsTest {
         assertThat(parseGithubUrl("https://Github.Com/Ashwanthkumar/gocd-build-github-pull-requests"), is("Ashwanthkumar/gocd-build-github-pull-requests"));
         assertThat(parseGithubUrl("http://code.corp.yourcompany.com:username/repo"), is("username/repo"));
         assertThat(parseGithubUrl("https://github.company.com/user/test-repo.git"), is("user/test-repo"));
-    }
-
-    @Test
-    public void shouldTestForValidSSHUrl() {
-        assertTrue(GHUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo"));
-        assertTrue(GHUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo.git"));
-        assertTrue(GHUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo/"));
-        assertFalse(GHUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo/foo"));
-        assertFalse(GHUtils.isValidSSHUrl("git@code.corp.yourcompany.com:/username/repo"));
     }
 
     @Test

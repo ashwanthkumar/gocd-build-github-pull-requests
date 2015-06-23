@@ -44,9 +44,7 @@ public class GitHubProvider implements Provider {
 
     @Override
     public boolean isValidURL(String url) {
-        if (StringUtil.isEmpty(url))
-            return false;
-        return new URLUtils().isValidURL(url) || GHUtils.isValidSSHUrl(url);
+        return new URLUtils().isValidURL(url);
     }
 
     @Override
@@ -122,7 +120,8 @@ public class GitHubProvider implements Provider {
     }
 
     private GitHub loginWith(GitConfig gitConfig) throws IOException {
-        if(hasCredentials(gitConfig)) return GitHub.connectUsingPassword(gitConfig.getUsername(), gitConfig.getPassword());
+        if (hasCredentials(gitConfig))
+            return GitHub.connectUsingPassword(gitConfig.getUsername(), gitConfig.getPassword());
         else return GitHub.connect();
     }
 

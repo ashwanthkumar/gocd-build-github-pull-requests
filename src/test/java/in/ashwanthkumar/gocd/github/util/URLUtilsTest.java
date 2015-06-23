@@ -3,8 +3,8 @@ package in.ashwanthkumar.gocd.github.util;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class URLUtilsTest {
     private URLUtils urlUtils;
@@ -16,7 +16,16 @@ public class URLUtilsTest {
 
     @Test
     public void shouldValidateURL() throws Exception {
-        assertThat(urlUtils.isValidURL("http://www.google.com"), is(true));
-        assertThat(urlUtils.isValidURL("https://www.google.com"), is(true));
+        assertTrue(urlUtils.isValidHTTPUrl("http://www.google.com"));
+        assertTrue(urlUtils.isValidHTTPUrl("https://www.google.com"));
+    }
+
+    @Test
+    public void shouldTestForValidSSHUrl() {
+        assertTrue(urlUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo"));
+        assertTrue(urlUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo.git"));
+        assertTrue(urlUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo/"));
+        assertFalse(urlUtils.isValidSSHUrl("git@code.corp.yourcompany.com:username/repo/foo"));
+        assertFalse(urlUtils.isValidSSHUrl("git@code.corp.yourcompany.com:/username/repo"));
     }
 }

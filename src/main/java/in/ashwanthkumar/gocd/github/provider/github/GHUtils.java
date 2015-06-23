@@ -35,17 +35,6 @@ public class GHUtils {
         else return urlWithoutPrefix;
     }
 
-    /**
-     * Simple check for SSH form of Git urls
-     * - Should have a @ in the url
-     * - It should have 2 parts when split by /
-     *
-     * FIXME - Find a better way to do this?
-     */
-    public static boolean isValidSSHUrl(String url) {
-        return url.contains("@") && url.replaceAll("//", "/").split("/").length == 2;
-    }
-
     public static int prIdFrom(String diffUrl) {
         return Integer.parseInt(diffUrl.substring(diffUrl.indexOf("/pull/") + 6, diffUrl.length() - 5));
     }
