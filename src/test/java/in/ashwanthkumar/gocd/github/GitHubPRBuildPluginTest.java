@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -81,13 +82,14 @@ public class GitHubPRBuildPluginTest {
         assertThat(gitConfig.getPassword(), is(passwordProperty));
     }
 
+    @Ignore("url validation is turned off")
     @Test
     public void shouldHandleInvalidURLCorrectly_ValidationRequest() {
-        Map request = createRequestMap(Arrays.asList(new Pair("url", "crap")));
+        Map request = createRequestMap(asList(new Pair("url", "crap")));
 
         GoPluginApiResponse response = new GitHubPRBuildPlugin().handle(createGoPluginApiRequest(GitHubPRBuildPlugin.REQUEST_VALIDATE_SCM_CONFIGURATION, request));
 
-        verifyResponse(response.responseBody(), Arrays.asList(new Pair("url", "Invalid URL")));
+        verifyResponse(response.responseBody(), asList(new Pair("url", "Invalid URL")));
     }
 
     @Test
@@ -176,7 +178,7 @@ public class GitHubPRBuildPluginTest {
     // TODO - Write proper tests for the plugin
 
     private void verifyValidationSuccess(String url) {
-        Map request = createRequestMap(Arrays.asList(new Pair("url", url)));
+        Map request = createRequestMap(asList(new Pair("url", url)));
 
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
         plugin.setProvider(new GitHubProvider());
