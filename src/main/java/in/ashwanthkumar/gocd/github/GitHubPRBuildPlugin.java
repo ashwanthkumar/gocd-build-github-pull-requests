@@ -15,6 +15,7 @@ import com.tw.go.plugin.model.Revision;
 import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
+import in.ashwanthkumar.gocd.github.util.BranchFilter;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -106,6 +107,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("url", createField("URL", null, true, true, false, "0"));
         response.put("username", createField("Username", null, false, false, false, "1"));
         response.put("password", createField("Password", null, false, false, true, "2"));
+        response.put("branchblacklist", createField("Blacklisted branches", "", false, false, false, "3"));
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
@@ -200,16 +202,23 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             }
 
             Map<String, String> newerRevisions = new HashMap<String, String>();
+
+            BranchFilter branchFilter = new BranchFilter(configuration.get("branchblacklist"));
+
             for (String branch : newBranchToRevisionMap.keySet()) {
-                if (branchHasNewChange(oldBranchToRevisionMap.get(branch), newBranchToRevisionMap.get(branch))) {
-                    // If there are any changes we should return the only one of them.
-                    // Otherwise Go.CD skips other changes (revisions) in this call.
-                    // You can think about it like if we always return a minimum item
-                    // of a set with comparable items.
-                    String newValue = newBranchToRevisionMap.get(branch);
-                    newerRevisions.put(branch, newValue);
-                    oldBranchToRevisionMap.put(branch, newValue);
-                    break;
+                if (!branchFilter.isBranchBlacklisted(branch)) {
+                    if (branchHasNewChange(oldBranchToRevisionMap.get(branch), newBranchToRevisionMap.get(branch))) {
+                        // If there are any changes we should return the only one of them.
+                        // Otherwise Go.CD skips other changes (revisions) in this call.
+                        // You can think about it like if we always return a minimum item
+                        // of a set with comparable items.
+                        String newValue = newBranchToRevisionMap.get(branch);
+                        newerRevisions.put(branch, newValue);
+                        oldBranchToRevisionMap.put(branch, newValue);
+                        break;
+                    }
+                } else {
+                    LOGGER.debug(String.format("Branch %s is blacklisted", branch));
                 }
             }
 
