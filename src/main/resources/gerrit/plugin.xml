@@ -2,7 +2,7 @@
 <go-plugin id="gerrit.cs" version="1">
     <about>
         <name>Gerrit Change Set plugin</name>
-        <version>1.2</version>
+        <version>${project.version}</version>
         <target-go-version>15.1.0</target-go-version>
         <description>Provides ability to do change set builds for Gerrit repository</description>
         <vendor>
