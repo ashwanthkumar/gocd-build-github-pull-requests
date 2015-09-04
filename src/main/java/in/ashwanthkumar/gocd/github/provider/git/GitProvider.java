@@ -31,7 +31,7 @@ public class GitProvider implements Provider {
 
     @Override
     public void checkConnection(GitConfig gitConfig) {
-        HelperFactory.git(gitConfig, null).checkConnection();
+        HelperFactory.gitCmd(gitConfig, null).checkConnection();
     }
 
     @Override
