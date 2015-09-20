@@ -252,7 +252,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, Object> revisionMap = (Map<String, Object>) requestBodyMap.get("revision");
         String revision = (String) revisionMap.get("revision");
         for (int attempt = 0; attempt < CHECKOUT_ATTEMPTS; attempt++) {
-            LOGGER.info(String.format("destination: %s. commit: %s, attempt: %s", destinationFolder, revision, attempt));
+            LOGGER.info(String.format("destination: %s. commit: %s, attempt: %s out of %s", destinationFolder, revision, attempt, CHECKOUT_ATTEMPTS));
 
             try {
                 GitHelper git = HelperFactory.git(gitConfig, new File(destinationFolder));
@@ -265,7 +265,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
                 return renderJSON(SUCCESS_RESPONSE_CODE, response);
             } catch (Throwable t) {
-                LOGGER.warn(String.format("Attempt %s, checkout: ", attempt), t);
+                LOGGER.warn(String.format("Attempt %s out of %s, checkout: ", attempt, CHECKOUT_ATTEMPTS), t);
                 if (attempt >= CHECKOUT_ATTEMPTS) {
                     return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
                 }
