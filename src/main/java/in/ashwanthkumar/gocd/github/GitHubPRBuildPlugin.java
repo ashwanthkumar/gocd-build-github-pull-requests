@@ -159,7 +159,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.info(String.format("Flyweight: %s", flyweightFolder));
 
         try {
-            GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
+            GitHelper git = HelperFactory.gitCmd(gitConfig, new File(flyweightFolder));
             git.cloneOrFetch(provider.getRefSpec());
             Map<String, String> branchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
             Revision revision = git.getLatestRevision();
@@ -188,7 +188,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
 
         try {
-            GitHelper git = HelperFactory.git(gitConfig, new File(flyweightFolder));
+            GitHelper git = HelperFactory.gitCmd(gitConfig, new File(flyweightFolder));
             git.cloneOrFetch(provider.getRefSpec());
             Map<String, String> newBranchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
 
@@ -255,7 +255,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             LOGGER.info(String.format("destination: %s. commit: %s, attempt: %s out of %s", destinationFolder, revision, attempt, CHECKOUT_ATTEMPTS));
 
             try {
-                GitHelper git = HelperFactory.git(gitConfig, new File(destinationFolder));
+            GitHelper git = HelperFactory.gitCmd(gitConfig, new File(destinationFolder));
                 git.cloneOrFetch(provider.getRefSpec());
                 git.resetHard(revision);
 
