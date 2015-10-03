@@ -40,6 +40,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     public static final String REQUEST_LATEST_REVISION = "latest-revision";
     public static final String REQUEST_LATEST_REVISIONS_SINCE = "latest-revisions-since";
     public static final String REQUEST_CHECKOUT = "checkout";
+    
+    public static final int CHECKOUT_ATTEMPTS = 3;
 
     public static final String BRANCH_TO_REVISION_MAP = "BRANCH_TO_REVISION_MAP";
     private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
@@ -249,22 +251,27 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         String destinationFolder = (String) requestBodyMap.get("destination-folder");
         Map<String, Object> revisionMap = (Map<String, Object>) requestBodyMap.get("revision");
         String revision = (String) revisionMap.get("revision");
-        LOGGER.info(String.format("destination: %s. commit: %s", destinationFolder, revision));
+        for (int attempt = 0; attempt < CHECKOUT_ATTEMPTS; attempt++) {
+            LOGGER.info(String.format("destination: %s. commit: %s, attempt: %s out of %s", destinationFolder, revision, attempt, CHECKOUT_ATTEMPTS));
 
-        try {
+            try {
             GitHelper git = HelperFactory.gitCmd(gitConfig, new File(destinationFolder));
-            git.cloneOrFetch(provider.getRefSpec());
-            git.resetHard(revision);
+                git.cloneOrFetch(provider.getRefSpec());
+                git.resetHard(revision);
 
-            Map<String, Object> response = new HashMap<String, Object>();
-            response.put("status", "success");
-            response.put("messages", Arrays.asList(String.format("Checked out to revision %s", revision)));
+                Map<String, Object> response = new HashMap<String, Object>();
+                response.put("status", "success");
+                response.put("messages", Arrays.asList(String.format("Checked out to revision %s", revision)));
 
-            return renderJSON(SUCCESS_RESPONSE_CODE, response);
-        } catch (Throwable t) {
-            LOGGER.warn("checkout: ", t);
-            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
+                return renderJSON(SUCCESS_RESPONSE_CODE, response);
+            } catch (Throwable t) {
+                LOGGER.warn(String.format("Attempt %s out of %s, checkout: ", attempt, CHECKOUT_ATTEMPTS), t);
+                if (attempt >= CHECKOUT_ATTEMPTS) {
+                    return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
+                }
+            }
         }
+        return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, "Checkout failed");
     }
 
     GitConfig getGitConfig(Map<String, String> configuration) {
