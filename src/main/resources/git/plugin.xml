@@ -2,7 +2,7 @@
 <go-plugin id="git.fb" version="1">
     <about>
         <name>Git Feature Branch plugin</name>
-        <version>1.2.2</version>
+        <version>1.2.3</version>
         <target-go-version>15.1.0</target-go-version>
         <description>Provides ability to do feature branch builds for Git repository</description>
         <vendor>
