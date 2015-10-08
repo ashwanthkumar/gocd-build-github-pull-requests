@@ -10,12 +10,15 @@ import in.ashwanthkumar.utils.lang.StringUtils;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
 public class GitHubProvider implements Provider {
+    private static final Logger LOG = LoggerFactory.getLogger(GitHubProvider.class);
     // public static final String PR_FETCH_REFSPEC = "+refs/pull/*/merge:refs/gh-merge/remotes/origin/*";
     // public static final String PR_MERGE_PREFIX = "refs/gh-merge/remotes/origin/";
     public static final String REF_SPEC = "+refs/pull/*/head:refs/remotes/origin/pull-request/*";
@@ -71,7 +74,9 @@ public class GitHubProvider implements Provider {
         data.put("PR_ID", prId);
 
         PullRequestStatus prStatus = null;
-        if (!System.getProperty("go.plugin.github.pr.populate-details", "Y").equals("N")) {
+        boolean isDisabled = System.getProperty("go.plugin.github.pr.populate-details", "Y").equals("N");
+        LOG.debug("Populating PR details is disabled");
+        if (!isDisabled) {
             prStatus = getPullRequestStatus(gitConfig, prId, prSHA);
         }
 
@@ -92,6 +97,7 @@ public class GitHubProvider implements Provider {
             return transformGHPullRequestToPullRequestStatus(prSHA).apply(currentPR);
         } catch (Exception e) {
             // ignore
+            LOG.warn(e.getMessage(), e);
         }
         return null;
     }
