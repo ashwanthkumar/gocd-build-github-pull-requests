@@ -8,18 +8,15 @@ import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.GitHelper;
-import com.tw.go.plugin.HelperFactory;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
 import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
-import in.ashwanthkumar.gocd.github.util.BranchFilter;
-import in.ashwanthkumar.gocd.github.util.JSONUtils;
+import in.ashwanthkumar.gocd.github.util.*;
 import org.apache.commons.io.IOUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
@@ -50,6 +47,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     public static final int INTERNAL_ERROR_RESPONSE_CODE = 500;
 
     private Provider provider;
+    private GitFactory gitFactory;
+    private GitFolderFactory gitFolderFactory;
 
     public GitHubPRBuildPlugin() {
         try {
@@ -58,9 +57,17 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Class<?> providerClass = Class.forName(properties.getProperty("provider"));
             Constructor<?> constructor = providerClass.getConstructor();
             provider = (Provider) constructor.newInstance();
+            gitFactory = new GitFactory();
+            gitFolderFactory = new GitFolderFactory();
         } catch (Exception e) {
             throw new RuntimeException("could not create provider", e);
         }
+    }
+
+    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory) {
+        this.provider = provider;
+        this.gitFactory = gitFactory;
+        this.gitFolderFactory = gitFolderFactory;
     }
 
     @Override
@@ -160,7 +167,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.info(String.format("Flyweight: %s", flyweightFolder));
 
         try {
-            GitHelper git = HelperFactory.gitCmd(gitConfig, new File(flyweightFolder));
+            GitHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(flyweightFolder));
             git.cloneOrFetch(provider.getRefSpec());
             Map<String, String> branchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
             Revision revision = git.getLatestRevision();
@@ -189,7 +196,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
 
         try {
-            GitHelper git = HelperFactory.gitCmd(gitConfig, new File(flyweightFolder));
+            GitHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(flyweightFolder));
             git.cloneOrFetch(provider.getRefSpec());
             Map<String, String> newBranchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
 
@@ -274,7 +281,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.info(String.format("destination: %s. commit: %s", destinationFolder, revision));
 
         try {
-            GitHelper git = HelperFactory.gitCmd(gitConfig, new File(destinationFolder));
+            GitHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(destinationFolder));
             git.cloneOrFetch(provider.getRefSpec());
             git.resetHard(revision);
 
