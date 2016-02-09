@@ -21,7 +21,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.thoughtworks.go</groupId>
+            <groupId>in.ashwanthkumar</groupId>
             <artifactId>git-cmd</artifactId>
             <version>1.0</version>
         </dependency>
