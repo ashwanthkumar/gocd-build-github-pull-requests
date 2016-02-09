@@ -1,4 +1,6 @@
 #!/bin/sh
+set -e -x
+
 rm -rf dist/
 mkdir dist
 
