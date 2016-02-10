@@ -202,7 +202,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Map<String, String> newerRevisions = new HashMap<String, String>();
             for (String branch : newBranchToRevisionMap.keySet()) {
                 if (branchHasNewChange(oldBranchToRevisionMap.get(branch), newBranchToRevisionMap.get(branch))) {
-                    newerRevisions.put(branch, newBranchToRevisionMap.get(branch));
+                    // If there are any changes we should return the only one of them.
+                    // Otherwise Go.CD skips other changes (revisions) in this call.
+                    // You can think about it like if we always return a minimum item
+                    // of a set with comparable items.
+                    String newValue = newBranchToRevisionMap.get(branch);
+                    newerRevisions.put(branch, newValue);
+                    oldBranchToRevisionMap.put(branch, newValue);
+                    break;
                 }
             }
 
@@ -228,7 +235,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 Map<String, Object> response = new HashMap<String, Object>();
                 response.put("revisions", revisions);
                 Map<String, String> scmDataMap = new HashMap<String, String>();
-                scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(newBranchToRevisionMap));
+                // We shouldn't return any new branches from newBranchToRevisionMap.
+                // Instead of that, we can always return the previously modified map
+                // (with a newly added or with changed and existing branch), because
+                // it will be the same as there are no any changes
+                // (see if (newerRevisions.isEmpty()) { ... } clause)
+                scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(oldBranchToRevisionMap));
                 response.put("scm-data", scmDataMap);
                 return renderJSON(SUCCESS_RESPONSE_CODE, response);
             }
