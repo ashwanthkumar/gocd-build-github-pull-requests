@@ -107,7 +107,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("url", createField("URL", null, true, true, false, "0"));
         response.put("username", createField("Username", null, false, false, false, "1"));
         response.put("password", createField("Password", null, false, false, true, "2"));
-        response.put("branchblacklist", createField("Blacklisted branches", "", false, false, false, "3"));
+        response.put("branchwhitelist", createField("Whitelisted branches", "", false, false, false, "3"));
+        response.put("branchblacklist", createField("Blacklisted branches", "", false, false, false, "4"));
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
@@ -203,7 +204,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
             Map<String, String> newerRevisions = new HashMap<String, String>();
 
-            BranchFilter branchFilter = new BranchFilter(configuration.get("branchblacklist"), null);
+            BranchFilter branchFilter = new BranchFilter(configuration.get("branchblacklist"), configuration.get("branchwhitelist"));
 
             for (String branch : newBranchToRevisionMap.keySet()) {
                 if (branchFilter.isBranchValid(branch)) {
