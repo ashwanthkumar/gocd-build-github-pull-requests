@@ -203,10 +203,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
             Map<String, String> newerRevisions = new HashMap<String, String>();
 
-            BranchFilter branchFilter = new BranchFilter(configuration.get("branchblacklist"));
+            BranchFilter branchFilter = new BranchFilter(configuration.get("branchblacklist"), null);
 
             for (String branch : newBranchToRevisionMap.keySet()) {
-                if (!branchFilter.isBranchBlacklisted(branch)) {
+                if (branchFilter.isBranchValid(branch)) {
                     if (branchHasNewChange(oldBranchToRevisionMap.get(branch), newBranchToRevisionMap.get(branch))) {
                         // If there are any changes we should return the only one of them.
                         // Otherwise Go.CD skips other changes (revisions) in this call.

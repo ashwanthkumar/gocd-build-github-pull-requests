@@ -13,71 +13,87 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class BranchFilterTest {
 
+    private enum Expect {
+        PASS, FAIL
+    }
+
+    private static class Value {
+        private String value;
+
+        public Value(String value) {
+            this.value = value;
+        }
+
+        public String get() { return value; }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
+    private static class Blacklist extends Value {
+        public Blacklist(String value) {
+            super(value);
+        }
+    }
+    private static class Whitelist extends Value {
+        public Whitelist(String value) {
+            super(value);
+        }
+    }
+    private static class Branch extends Value {
+        public Branch(String value) {
+            super(value);
+        }
+    }
+
     @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
-                {"branch", valid("branch"), invalid("master")},
-                {"branch1,master,branch2", valid("branch2", "master", "branch1"), invalid("branch3")},
-                {"  branch  \t", valid("branch"), invalid("master")},
-                {"  branch1  \t,\t  branch2  ", valid("branch1", "branch2"), invalid("master")},
-                {"branch*", valid("branch", "branch1", "branchfoo"), invalid("master", "foobranch", "branch/foo")},
-                {"branch/*", valid("branch/foo"), invalid("master", "foobranch", "branch/foo/bar")},
-                {"branch**", valid("branch", "branch/foo/bar", "branch1", "branchfoo"), invalid("master", "foobranch")},
-                {"branch?", valid("branch1", "brancha"), invalid("master", "foobranch", "branch")},
-                {"branch{foo,bar}", valid("branchfoo", "branchbar"), invalid("master", "branch", "branchzoo")},
-                {"{fizz,buzz}branch{foo,bar}",
-                        valid("fizzbranchfoo", "buzzbranchbar", "fizzbranchbar"),
-                        invalid("master", "branch", "branchzoo", "branchbar", "fizzbranch")},
-                {"{fizz,buzz}b{foo,bar},c{1,2},{3,4}d{5,6}",
-                        valid("fizzbfoo", "buzzbbar", "c1", "c2", "3d5", "4d6"),
-                        invalid("master", "branch", "d5", "d56", "3d56")},
-                {"[a-d]fizz,buzz[a-d]",
-                        valid("afizz", "dfizz", "buzza", "buzzd", "buzzb"),
-                        invalid("fizz", "buzz", "fizze", "buzze")},
-                {"[ad]fizz,buzz[ad]",
-                        valid("afizz", "dfizz", "buzza", "buzzd"),
-                        invalid("fizz", "buzz", "fizze", "buzze", "fizzb", "buzzb")},
-                {"[!ad]fizz,buzz[!ad]",
-                        invalid("efizz", "buzze", "cfizz", "buzzb"),
-                        valid("fizz", "buzz", "afizz", "dfizz", "buzza", "buzzd")},
+                {new Blacklist(null),      new Whitelist(null),     new Branch("master"),     Expect.PASS},
+
+                {new Blacklist("master"), new Whitelist("feature"), new Branch("feature"), Expect.PASS},
+
+                {new Blacklist(null), new Whitelist("feature"), new Branch("feature"), Expect.PASS},
+                {new Blacklist("master"), new Whitelist(null), new Branch("master"), Expect.FAIL},
+                {new Blacklist("master"), new Whitelist(null), new Branch("feature"), Expect.FAIL},
+
+                {new Blacklist("feature"), new Whitelist("feature"), new Branch("feature"), Expect.FAIL},
+                {new Blacklist("master"), new Whitelist("feature"), new Branch("master"), Expect.FAIL},
+
+                {new Blacklist("master1"), new Whitelist("master*"), new Branch("master"), Expect.PASS},
+                {new Blacklist("master1"), new Whitelist("master*"), new Branch("master2"), Expect.PASS},
+                {new Blacklist("master1"), new Whitelist("master*"), new Branch("master1"), Expect.FAIL},
+                {new Blacklist("master*"), new Whitelist("master1"), new Branch("master1"), Expect.FAIL},
+                {new Blacklist("master*"), new Whitelist("master1"), new Branch("master2"), Expect.FAIL},
+
+                {new Blacklist("master[a-d]"), new Whitelist("master[cde]"), new Branch("masterc"), Expect.FAIL},
+                {new Blacklist("master[a-d]"), new Whitelist("master[cde]"), new Branch("mastere"), Expect.PASS},
         });
     }
 
-    private String branches;
-    private String[] validBranches;
-    private String[] invalidBranches;
+    private Blacklist blacklist;
+    private Whitelist whitelist;
+    private Branch branch;
+    private Expect expect;
 
-    public BranchFilterTest(String branches, String[] validBranches, String[] invalidBranches) {
-        this.branches = branches;
-        this.validBranches = validBranches;
-        this.invalidBranches = invalidBranches;
+    public BranchFilterTest(Blacklist blacklist, Whitelist whitelist, Branch branch, Expect expect) {
+        this.blacklist = blacklist;
+        this.whitelist = whitelist;
+        this.branch = branch;
+        this.expect = expect;
     }
 
     @Test
-    public void validValues() {
-        BranchFilter branchFilter = new BranchFilter(branches);
+    public void test() {
+        BranchFilter filter = new BranchFilter(blacklist.get(), whitelist.get());
 
-        for (String value : validBranches) {
-            assertTrue(value, branchFilter.isBranchBlacklisted(value));
+        if (expect == Expect.PASS) {
+            assertTrue("PASS", filter.isBranchValid(branch.get()));
+        } else {
+            assertFalse("FAIL", filter.isBranchValid(branch.get()));
         }
     }
-
-    @Test
-    public void invalidValues() {
-        BranchFilter branchFilter = new BranchFilter(branches);
-
-        for (String value : invalidBranches) {
-            assertFalse(value, branchFilter.isBranchBlacklisted(value));
-        }
-    }
-
-    private static String[] valid(String... values) {
-        return values;
-    }
-
-    private static String[] invalid(String... values) {
-        return values;
-    }
-
 
 }
