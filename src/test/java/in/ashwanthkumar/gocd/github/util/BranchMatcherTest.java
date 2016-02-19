@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class BranchMatcherTest {
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "\"{0}\"")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 {null, valid(), invalid("", "branch", "master")},

@@ -14,7 +14,12 @@ import static org.junit.Assert.assertTrue;
 public class BranchFilterTest {
 
     private enum Expect {
-        PASS, FAIL
+        PASS, FAIL;
+
+        @Override
+        public String toString() {
+            return super.toString().toLowerCase();
+        }
     }
 
     private static class Value {
@@ -48,7 +53,7 @@ public class BranchFilterTest {
         }
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "whitelist: \"{0}\" and blacklist: \"{1}\"; Expect branch \"{2}\" to {3}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 {new Blacklist(null),      new Whitelist(null),     new Branch("master"),     Expect.PASS},
