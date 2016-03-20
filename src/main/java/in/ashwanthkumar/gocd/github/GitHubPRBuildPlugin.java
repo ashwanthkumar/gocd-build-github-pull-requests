@@ -41,6 +41,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     public static final String REQUEST_LATEST_REVISION = "latest-revision";
     public static final String REQUEST_LATEST_REVISIONS_SINCE = "latest-revisions-since";
     public static final String REQUEST_CHECKOUT = "checkout";
+    public static final String BRANCH_BLACKLIST_PROPERTY_NAME = "branchblacklist";
+    public static final String BRANCH_WHITELIST_PROPERTY_NAME = "branchwhitelist";
 
     public static final String BRANCH_TO_REVISION_MAP = "BRANCH_TO_REVISION_MAP";
     private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
@@ -122,8 +124,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("username", createField("Username", null, false, false, false, "1"));
         response.put("password", createField("Password", null, false, false, true, "2"));
         if (blacklistEnabled) {
-            response.put("branchwhitelist", createField("Whitelisted branches", "", false, false, false, "3"));
-            response.put("branchblacklist", createField("Blacklisted branches", "", false, false, false, "4"));
+            response.put(BRANCH_WHITELIST_PROPERTY_NAME, createField("Whitelisted branches", "", false, false, false, "3"));
+            response.put(BRANCH_BLACKLIST_PROPERTY_NAME, createField("Blacklisted branches", "", false, false, false, "4"));
         }
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
@@ -283,8 +285,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private BranchFilter resolveBranchMatcher(Map<String, String> configuration) {
         if (blacklistEnabled) {
             return new BranchFilter(
-                    configuration.get("branchblacklist"),
-                    configuration.get("branchwhitelist")
+                    configuration.get(BRANCH_BLACKLIST_PROPERTY_NAME),
+                    configuration.get(BRANCH_WHITELIST_PROPERTY_NAME)
             );
         } else {
             return new BranchFilter();
