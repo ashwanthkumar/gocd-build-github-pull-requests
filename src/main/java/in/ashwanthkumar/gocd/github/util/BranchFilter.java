@@ -2,8 +2,13 @@ package in.ashwanthkumar.gocd.github.util;
 
 public class BranchFilter {
 
+    public static final String NO_BRANCHES = "";
     private final BranchMatcher blacklistedBranches;
     private final BranchMatcher whitelistedBrandches;
+
+    public BranchFilter() {
+        this(NO_BRANCHES, NO_BRANCHES);
+    }
 
     public BranchFilter(String blacklistOption, String whitelistOption) {
         this.blacklistedBranches = new BranchMatcher(blacklistOption);

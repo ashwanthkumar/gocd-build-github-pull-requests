@@ -14,7 +14,10 @@ import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.FileUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -178,7 +181,8 @@ public class GitHubPRBuildPluginTest {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GitProvider(),
                 gitFactory,
-                gitFolderFactory
+                gitFolderFactory,
+                true
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
@@ -199,7 +203,8 @@ public class GitHubPRBuildPluginTest {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GitProvider(),
                 gitFactory,
-                gitFolderFactory
+                gitFolderFactory,
+                true
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
@@ -210,6 +215,28 @@ public class GitHubPRBuildPluginTest {
 
         Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
         assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("null"));
+        assertThat(response.responseCode(), is(200));
+    }
+
+    @Test
+    public void shouldBuildBlacklistedBranchIfBlacklistingNotEnabled() {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GitProvider(),
+                gitFactory,
+                gitFolderFactory,
+                false
+        );
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mockRequest();
+        mockGitHelperToReturnBranch(gitFactory, "master");
+
+        GoPluginApiResponse response = pluginSpy.handleLatestRevisionSince(request);
+
+        Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
+        assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("{\"master\":\"abcdef01234567891\"}"));
         assertThat(response.responseCode(), is(200));
     }
 

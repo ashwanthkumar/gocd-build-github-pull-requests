@@ -14,7 +14,10 @@ import com.tw.go.plugin.model.Revision;
 import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
-import in.ashwanthkumar.gocd.github.util.*;
+import in.ashwanthkumar.gocd.github.util.BranchFilter;
+import in.ashwanthkumar.gocd.github.util.GitFactory;
+import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
+import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -49,11 +52,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private Provider provider;
     private GitFactory gitFactory;
     private GitFolderFactory gitFolderFactory;
+    private boolean blacklistEnabled;
 
     public GitHubPRBuildPlugin() {
         try {
             Properties properties = new Properties();
             properties.load(getClass().getResourceAsStream("/defaults.properties"));
+
+            blacklistEnabled = Boolean.valueOf(properties.getProperty("blacklistEnabled"));
             Class<?> providerClass = Class.forName(properties.getProperty("provider"));
             Constructor<?> constructor = providerClass.getConstructor();
             provider = (Provider) constructor.newInstance();
@@ -64,10 +70,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory) {
+    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory, boolean blacklistEnabled) {
         this.provider = provider;
         this.gitFactory = gitFactory;
         this.gitFolderFactory = gitFolderFactory;
+        this.blacklistEnabled = blacklistEnabled;
     }
 
     @Override
@@ -114,15 +121,21 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("url", createField("URL", null, true, true, false, "0"));
         response.put("username", createField("Username", null, false, false, false, "1"));
         response.put("password", createField("Password", null, false, false, true, "2"));
-        response.put("branchwhitelist", createField("Whitelisted branches", "", false, false, false, "3"));
-        response.put("branchblacklist", createField("Blacklisted branches", "", false, false, false, "4"));
+        if (blacklistEnabled) {
+            response.put("branchwhitelist", createField("Whitelisted branches", "", false, false, false, "3"));
+            response.put("branchblacklist", createField("Blacklisted branches", "", false, false, false, "4"));
+        }
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
     private GoPluginApiResponse handleSCMView() throws IOException {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("displayValue", provider.getName());
-        response.put("template", getFileContents("/scm.template.html"));
+        if (blacklistEnabled) {
+            response.put("template", getFileContents("/scm.template.html"));
+        } else {
+            response.put("template", getFileContents("/scm.template.no-blacklist.html"));
+        }
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
@@ -211,7 +224,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
             Map<String, String> newerRevisions = new HashMap<String, String>();
 
-            BranchFilter branchFilter = new BranchFilter(configuration.get("branchblacklist"), configuration.get("branchwhitelist"));
+            BranchFilter branchFilter = resolveBranchMatcher(configuration);
 
             for (String branch : newBranchToRevisionMap.keySet()) {
                 if (branchFilter.isBranchValid(branch)) {
@@ -264,6 +277,17 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         } catch (Throwable t) {
             LOGGER.warn("get latest revisions since: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
+        }
+    }
+
+    private BranchFilter resolveBranchMatcher(Map<String, String> configuration) {
+        if (blacklistEnabled) {
+            return new BranchFilter(
+                    configuration.get("branchblacklist"),
+                    configuration.get("branchwhitelist")
+            );
+        } else {
+            return new BranchFilter();
         }
     }
 

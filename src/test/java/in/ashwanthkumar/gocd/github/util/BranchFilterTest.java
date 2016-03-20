@@ -57,6 +57,7 @@ public class BranchFilterTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 {new Blacklist(null),      new Whitelist(null),     new Branch("master"),     Expect.PASS},
+                {new Blacklist(null),      new Whitelist(null),     new Branch("feature"),     Expect.PASS},
 
                 {new Blacklist("master"), new Whitelist("feature"), new Branch("feature"), Expect.PASS},
 
