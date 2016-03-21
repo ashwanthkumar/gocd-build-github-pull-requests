@@ -63,7 +63,9 @@ public class BranchFilterTest {
 
                 {new Blacklist(null), new Whitelist("feature"), new Branch("feature"), Expect.PASS},
                 {new Blacklist("master"), new Whitelist(null), new Branch("master"), Expect.FAIL},
-                {new Blacklist("master"), new Whitelist(null), new Branch("feature"), Expect.FAIL},
+                {new Blacklist("master"), new Whitelist(null), new Branch("feature"), Expect.PASS},
+                {new Blacklist("master"), new Whitelist(""), new Branch("master"), Expect.FAIL},
+                {new Blacklist("master"), new Whitelist(""), new Branch("feature"), Expect.PASS},
 
                 {new Blacklist("feature"), new Whitelist("feature"), new Branch("feature"), Expect.FAIL},
                 {new Blacklist("master"), new Whitelist("feature"), new Branch("master"), Expect.FAIL},

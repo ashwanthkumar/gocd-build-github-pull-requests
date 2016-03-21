@@ -10,10 +10,18 @@ public class BranchMatcher {
 
     public static final String SEPARATOR = ",(?![^{]*\\})";
 
+    public enum Mode {
+        PASS_EMPTY,
+        FAIL_EMPTY
+    }
+
+    private String pattern;
+    private Mode mode;
     private List<PathMatcher> patterns = new ArrayList<>();
 
-    public BranchMatcher(String branchPattern) {
+    public BranchMatcher(String branchPattern, Mode mode) {
         if (branchPattern != null) {
+            pattern = branchPattern;
             for (String branch : branchPattern.split(SEPARATOR)) {
                 PathMatcher matcher = getMatcher(branch.trim());
                 if (!branch.trim().isEmpty()) {
@@ -21,6 +29,7 @@ public class BranchMatcher {
                 }
             }
         }
+        this.mode = mode;
     }
 
     public boolean isEmpty() {
@@ -29,7 +38,7 @@ public class BranchMatcher {
 
     public boolean matches(String branch) {
         if (patterns.isEmpty()) {
-            return false;
+            return mode == Mode.PASS_EMPTY;
         }
 
         Path branchAsPath = getAsPath(branch);
@@ -48,4 +57,5 @@ public class BranchMatcher {
     private Path getAsPath(String branch) {
         return FileSystems.getDefault().getPath(branch);
     }
+
 }

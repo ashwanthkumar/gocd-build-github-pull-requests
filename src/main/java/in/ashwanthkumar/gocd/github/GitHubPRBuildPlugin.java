@@ -241,7 +241,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                         break;
                     }
                 } else {
-                    LOGGER.debug(String.format("Branch %s is blacklisted", branch));
+                    LOGGER.debug(String.format("Branch %s is filtered by branch matcher", branch));
                 }
             }
 
@@ -284,10 +284,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private BranchFilter resolveBranchMatcher(Map<String, String> configuration) {
         if (blacklistEnabled) {
-            return new BranchFilter(
-                    configuration.get(BRANCH_BLACKLIST_PROPERTY_NAME),
-                    configuration.get(BRANCH_WHITELIST_PROPERTY_NAME)
-            );
+            String blacklist = configuration.get(BRANCH_BLACKLIST_PROPERTY_NAME);
+            String whitelist = configuration.get(BRANCH_WHITELIST_PROPERTY_NAME);
+
+            return new BranchFilter(blacklist, whitelist);
         } else {
             return new BranchFilter();
         }
