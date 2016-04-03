@@ -106,6 +106,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("url", createField("URL", null, true, true, false, "0"));
         response.put("username", createField("Username", null, false, false, false, "1"));
         response.put("password", createField("Password", null, false, false, true, "2"));
+        response.put("shallowclone", createField("Shallow Clone", null, false, true, false, "3"));
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
@@ -280,7 +281,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GitConfig getGitConfig(Map<String, String> configuration) {
-        GitConfig gitConfig = new GitConfig(configuration.get("url"), configuration.get("username"), configuration.get("password"), null);
+        Boolean shallowClone = configuration.get("shallowclone").equals("on");
+        GitConfig gitConfig = new GitConfig(configuration.get("url"), configuration.get("username"), configuration.get("password"), null, true, shallowClone);
         provider.addConfigData(gitConfig);
         return gitConfig;
     }

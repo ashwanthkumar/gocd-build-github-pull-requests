@@ -13,3 +13,6 @@
     <input type="password" ng-model="password" ng-required="false"/>
     <span class="form_error" ng-show="GOINPUTNAME[password].$error.server">{{ GOINPUTNAME[password].$error.server }}</span>
 </div>
+<div class="form_item_block">
+    <label>Shallow clone:<input type="checkbox" ng-model="shallowclone" ng-required="false" value="shallowclone"/></label>
+</div>
