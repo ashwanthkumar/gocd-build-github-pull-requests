@@ -63,6 +63,7 @@ public class GitHubPRBuildPluginTest {
         configuration.put("url", "url");
         configuration.put("username", "config-username");
         configuration.put("password", "config-password");
+        configuration.put("shallowclone", "on");
 
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
         plugin.setProvider(new GitHubProvider());
@@ -71,6 +72,7 @@ public class GitHubPRBuildPluginTest {
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is("config-username"));
         assertThat(gitConfig.getPassword(), is("config-password"));
+        assertThat(gitConfig.isShallowClone(), is(true));
 
         configuration.remove("username");
         configuration.remove("password");
@@ -178,7 +180,7 @@ public class GitHubPRBuildPluginTest {
     // TODO - Write proper tests for the plugin
 
     private void verifyValidationSuccess(String url) {
-        Map request = createRequestMap(asList(new Pair("url", url)));
+        Map request = createRequestMap(asList(new Pair("url", url), new Pair("shallowclone", "off")));
 
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
         plugin.setProvider(new GitHubProvider());
