@@ -75,6 +75,10 @@ public class BranchMatcherTest {
                         valid("fizzbfoo", "buzzbbar", "c1", "c2", "3d5", "4d6"),
                         invalid("master", "branch", "d5", "d56", "3d56"),
                         BranchMatcher.Mode.FAIL_EMPTY},
+                {branches("{fizz,buzz}b{foo,bar},c{,1,2},{3,4}d{5,6}"),
+                        valid("fizzbfoo", "buzzbbar", "c", "c2", "3d5", "4d6"),
+                        invalid("master", "branch", "d5", "d56", "3d56"),
+                        BranchMatcher.Mode.FAIL_EMPTY},
 
                 // Character matches
                 {branches("[a-d]fizz,buzz[a-d]"),
