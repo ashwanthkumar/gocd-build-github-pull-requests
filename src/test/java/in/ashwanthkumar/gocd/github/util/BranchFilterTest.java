@@ -22,71 +22,51 @@ public class BranchFilterTest {
         }
     }
 
-    private static class Value {
-        private String value;
-
-        public Value(String value) {
-            this.value = value;
-        }
-
-        public String get() { return value; }
-
-        @Override
-        public String toString() {
-            return value;
-        }
+    private static String blacklist(String value) {
+        return value;
     }
 
-    private static class Blacklist extends Value {
-        public Blacklist(String value) {
-            super(value);
-        }
+    private static String whitelist(String value) {
+        return value;
     }
-    private static class Whitelist extends Value {
-        public Whitelist(String value) {
-            super(value);
-        }
-    }
-    private static class Branch extends Value {
-        public Branch(String value) {
-            super(value);
-        }
+
+    private static String branch(String value) {
+        return value;
     }
 
     @Parameterized.Parameters(name = "whitelist: \"{0}\" and blacklist: \"{1}\"; Expect branch \"{2}\" to {3}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
-                {new Blacklist(null),      new Whitelist(null),     new Branch("master"),     Expect.PASS},
-                {new Blacklist(null),      new Whitelist(null),     new Branch("feature"),     Expect.PASS},
+                {blacklist(null), whitelist(null), branch("master"), Expect.PASS},
+                {blacklist(null), whitelist(null), branch("feature"), Expect.PASS},
 
-                {new Blacklist("master"), new Whitelist("feature"), new Branch("feature"), Expect.PASS},
+                {blacklist("master"), whitelist("feature"), branch("feature"), Expect.PASS},
+                {blacklist("feature"), whitelist("feature"), branch("feature"), Expect.FAIL},
+                {blacklist("master"), whitelist("feature"), branch("master"), Expect.FAIL},
 
-                {new Blacklist(null), new Whitelist("feature"), new Branch("feature"), Expect.PASS},
-                {new Blacklist("master"), new Whitelist(null), new Branch("master"), Expect.FAIL},
-                {new Blacklist("master"), new Whitelist(null), new Branch("feature"), Expect.PASS},
-                {new Blacklist("master"), new Whitelist(""), new Branch("master"), Expect.FAIL},
-                {new Blacklist("master"), new Whitelist(""), new Branch("feature"), Expect.PASS},
+                {blacklist(null), whitelist("feature"), branch("feature"), Expect.PASS},
+                {blacklist("master"), whitelist(null), branch("master"), Expect.FAIL},
+                {blacklist("master"), whitelist(null), branch("feature"), Expect.PASS},
+                {blacklist("master"), whitelist(""), branch("master"), Expect.FAIL},
+                {blacklist("master"), whitelist(""), branch("feature"), Expect.PASS},
 
-                {new Blacklist("feature"), new Whitelist("feature"), new Branch("feature"), Expect.FAIL},
-                {new Blacklist("master"), new Whitelist("feature"), new Branch("master"), Expect.FAIL},
+                {blacklist("master1"), whitelist("master*"), branch("master"), Expect.PASS},
+                {blacklist("master1"), whitelist("master*"), branch("master2"), Expect.PASS},
+                {blacklist("master1"), whitelist("master*"), branch("master1"), Expect.FAIL},
+                {blacklist("master*"), whitelist("master1"), branch("master1"), Expect.FAIL},
+                {blacklist("master*"), whitelist("master1"), branch("master2"), Expect.FAIL},
 
-                {new Blacklist("master1"), new Whitelist("master*"), new Branch("master"), Expect.PASS},
-                {new Blacklist("master1"), new Whitelist("master*"), new Branch("master2"), Expect.PASS},
-                {new Blacklist("master1"), new Whitelist("master*"), new Branch("master1"), Expect.FAIL},
-                {new Blacklist("master*"), new Whitelist("master1"), new Branch("master1"), Expect.FAIL},
-                {new Blacklist("master*"), new Whitelist("master1"), new Branch("master2"), Expect.FAIL},
-
-                {new Blacklist("master[a-d]"), new Whitelist("master[cde]"), new Branch("masterc"), Expect.FAIL},
-                {new Blacklist("master[a-d]"), new Whitelist("master[cde]"), new Branch("mastere"), Expect.PASS},
+                {blacklist("master[a-d]"), whitelist("master[cde]"), branch("masterc"), Expect.FAIL},
+                {blacklist("master[a-d]"), whitelist("master[cde]"), branch("mastere"), Expect.PASS},
         });
     }
 
-    private Blacklist blacklist;
-    private Whitelist whitelist;
-    private Branch branch;
+    private String blacklist;
+    private String whitelist;
+    private String branch;
     private Expect expect;
 
-    public BranchFilterTest(Blacklist blacklist, Whitelist whitelist, Branch branch, Expect expect) {
+    public BranchFilterTest(String blacklist, String whitelist, String branch, Expect expect) {
         this.blacklist = blacklist;
         this.whitelist = whitelist;
         this.branch = branch;
@@ -94,13 +74,13 @@ public class BranchFilterTest {
     }
 
     @Test
-    public void test() {
-        BranchFilter filter = new BranchFilter(blacklist.get(), whitelist.get());
+    public void shouldResolveBranchValidity() {
+        BranchFilter filter = new BranchFilter(blacklist, whitelist);
 
         if (expect == Expect.PASS) {
-            assertTrue("PASS", filter.isBranchValid(branch.get()));
+            assertTrue("PASS", filter.isBranchValid(branch));
         } else {
-            assertFalse("FAIL", filter.isBranchValid(branch.get()));
+            assertFalse("FAIL", filter.isBranchValid(branch));
         }
     }
 
