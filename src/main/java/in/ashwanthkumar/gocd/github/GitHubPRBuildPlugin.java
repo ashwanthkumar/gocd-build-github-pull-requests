@@ -134,9 +134,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("displayValue", provider.getName());
         if (blacklistEnabled) {
-            response.put("template", getFileContents("/scm.template.html"));
+            response.put("template", getFileContents("/scm.template.branch.filter.html"));
         } else {
-            response.put("template", getFileContents("/scm.template.no-blacklist.html"));
+            response.put("template", getFileContents("/scm.template.html"));
         }
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
