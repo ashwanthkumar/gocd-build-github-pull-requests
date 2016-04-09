@@ -54,14 +54,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private Provider provider;
     private GitFactory gitFactory;
     private GitFolderFactory gitFolderFactory;
-    private boolean blacklistEnabled;
+    private boolean branchFilterEnabled;
 
     public GitHubPRBuildPlugin() {
         try {
             Properties properties = new Properties();
             properties.load(getClass().getResourceAsStream("/defaults.properties"));
 
-            blacklistEnabled = Boolean.valueOf(properties.getProperty("blacklistEnabled"));
+            branchFilterEnabled = Boolean.valueOf(properties.getProperty("branchFilterEnabled"));
             Class<?> providerClass = Class.forName(properties.getProperty("provider"));
             Constructor<?> constructor = providerClass.getConstructor();
             provider = (Provider) constructor.newInstance();
@@ -72,11 +72,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory, boolean blacklistEnabled) {
+    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory, boolean branchFilterEnabled) {
         this.provider = provider;
         this.gitFactory = gitFactory;
         this.gitFolderFactory = gitFolderFactory;
-        this.blacklistEnabled = blacklistEnabled;
+        this.branchFilterEnabled = branchFilterEnabled;
     }
 
     @Override
@@ -123,7 +123,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("url", createField("URL", null, true, true, false, "0"));
         response.put("username", createField("Username", null, false, false, false, "1"));
         response.put("password", createField("Password", null, false, false, true, "2"));
-        if (blacklistEnabled) {
+        if (branchFilterEnabled) {
             response.put(BRANCH_WHITELIST_PROPERTY_NAME, createField("Whitelisted branches", "", false, false, false, "3"));
             response.put(BRANCH_BLACKLIST_PROPERTY_NAME, createField("Blacklisted branches", "", false, false, false, "4"));
         }
@@ -133,7 +133,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private GoPluginApiResponse handleSCMView() throws IOException {
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("displayValue", provider.getName());
-        if (blacklistEnabled) {
+        if (branchFilterEnabled) {
             response.put("template", getFileContents("/scm.template.branch.filter.html"));
         } else {
             response.put("template", getFileContents("/scm.template.html"));
@@ -283,7 +283,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private BranchFilter resolveBranchMatcher(Map<String, String> configuration) {
-        if (blacklistEnabled) {
+        if (branchFilterEnabled) {
             String blacklist = configuration.get(BRANCH_BLACKLIST_PROPERTY_NAME);
             String whitelist = configuration.get(BRANCH_WHITELIST_PROPERTY_NAME);
 
