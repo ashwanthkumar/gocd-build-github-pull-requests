@@ -103,7 +103,7 @@ public class GitHubPRBuildPluginTest {
     }
 
     @Test
-    public void shouldGetSampleLatestRevision() {
+    public void shouldGetLatestRevision() {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
         plugin.setProvider(new GitProvider());
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
@@ -119,28 +119,27 @@ public class GitHubPRBuildPluginTest {
         verify(pluginSpy).getRevisionMap(gitConfig.capture(), branch.capture(), revision.capture());
 
         assertThat(branch.getValue(), is("master"));
-        assertThat(revision.getValue().getRevision(), is("449d376e45bea7a2c8a34a229a4ed93cfaa746f1"));
+        assertThat(revision.getValue().getRevision(), is("b33d7b5999724f5b7640bb9f95dd2e0f761a7384"));
     }
 
-    @Ignore
     @Test
     public void shouldGetLatestRevisionSince() {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
-        plugin.setProvider(new GitHubProvider());
+        plugin.setProvider(new GitProvider());
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
         GoPluginApiRequest request = mock(GoPluginApiRequest.class);
-        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, previous-revision: {revision: \"a683e0a27e66e710126f7697337efca052396a32\", data: {ACTIVE_PULL_REQUESTS: \"{\\\"1\\\": \\\"12c6ef2ae9843842e4800f2c4763388db81d6ec7\\\"}\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"target/test-classes/git/sample\"}}, \"scm-data\":{\"BRANCH_TO_REVISION_MAP\":\"{\\\"master\\\":\\\"449d376e45bea7a2c8a34a229a4ed93cfaa746f1\\\"}\"}, flyweight-folder: \"" + TEST_DIR + "\"}");
 
         pluginSpy.handleLatestRevisionSince(request);
 
         ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
-        ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> branch = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
-        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture());
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), branch.capture(), revision.capture());
 
-        assertThat(prId.getValue(), is("2"));
-        assertThat(revision.getValue().getRevision(), is("f985e61e556fc37f952385152d837de426b5cd8a"));
+        assertThat(branch.getValue(), is("master"));
+        assertThat(revision.getValue().getRevision(), is("b33d7b5999724f5b7640bb9f95dd2e0f761a7384"));
     }
 
     @Ignore
