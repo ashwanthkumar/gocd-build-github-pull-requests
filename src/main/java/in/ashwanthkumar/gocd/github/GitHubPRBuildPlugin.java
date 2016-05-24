@@ -209,7 +209,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                     String newValue = newBranchToRevisionMap.get(branch);
                     newerRevisions.put(branch, newValue);
                     oldBranchToRevisionMap.put(branch, newValue);
-                    break;
                 }
             }
 

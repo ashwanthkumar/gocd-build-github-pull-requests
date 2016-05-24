@@ -1,10 +1,13 @@
 package in.ashwanthkumar.gocd.github;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.Revision;
+import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
@@ -17,13 +20,16 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class GitHubPRBuildPluginTest {
@@ -99,46 +105,71 @@ public class GitHubPRBuildPluginTest {
         verifyValidationSuccess("git@github.com:ashwanthkumar/baz");
     }
 
-    @Ignore
     @Test
     public void shouldGetLatestRevision() {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
-        plugin.setProvider(new GitHubProvider());
+        plugin.setProvider(new GitProvider());
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
         GoPluginApiRequest request = mock(GoPluginApiRequest.class);
-        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"target/test-classes/git/sample\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
 
         pluginSpy.handleGetLatestRevision(request);
 
         ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
-        ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> branch = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
-        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture());
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), branch.capture(), revision.capture());
 
-        assertThat(prId.getValue(), is("master"));
-        assertThat(revision.getValue().getRevision(), is("a683e0a27e66e710126f7697337efca052396a32"));
+        assertThat(branch.getValue(), is("master"));
+        assertThat(revision.getValue().getRevision(), is("b33d7b5999724f5b7640bb9f95dd2e0f761a7384"));
     }
 
-    @Ignore
     @Test
     public void shouldGetLatestRevisionSince() {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
-        plugin.setProvider(new GitHubProvider());
+        plugin.setProvider(new GitProvider());
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
         GoPluginApiRequest request = mock(GoPluginApiRequest.class);
-        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, previous-revision: {revision: \"a683e0a27e66e710126f7697337efca052396a32\", data: {ACTIVE_PULL_REQUESTS: \"{\\\"1\\\": \\\"12c6ef2ae9843842e4800f2c4763388db81d6ec7\\\"}\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"target/test-classes/git/sample\"}}, \"scm-data\":{\"BRANCH_TO_REVISION_MAP\":\"{\\\"master\\\":\\\"449d376e45bea7a2c8a34a229a4ed93cfaa746f1\\\"}\"}, flyweight-folder: \"" + TEST_DIR + "\"}");
 
         pluginSpy.handleLatestRevisionSince(request);
 
         ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
-        ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> branch = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
-        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture());
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), branch.capture(), revision.capture());
 
-        assertThat(prId.getValue(), is("2"));
-        assertThat(revision.getValue().getRevision(), is("f985e61e556fc37f952385152d837de426b5cd8a"));
+        assertThat(branch.getValue(), is("master"));
+        assertThat(revision.getValue().getRevision(), is("b33d7b5999724f5b7640bb9f95dd2e0f761a7384"));
+    }
+
+    @Test
+    public void shouldGetLatestRevisionSinceAfterMerge() {
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
+        plugin.setProvider(new GitProvider());
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"target/test-classes/git/merge\"}}, \"scm-data\":{\"BRANCH_TO_REVISION_MAP\":\"{\\\"branch-to-merge\\\":\\\"ee44e53158c5718fcc3a33a4edc3ac47129e83d6\\\", \\\"master\\\":\\\"58fe143956fc859f55c9f545c3ec4cec8d959425\\\"}\"}, flyweight-folder: \"" + TEST_DIR + "\"}");
+
+        GoPluginApiResponse r = pluginSpy.handleLatestRevisionSince(request);
+
+        JsonParser p = new JsonParser();
+
+        // For some reason BRANCH_TO_REVISION_MAP stored as string
+        String revisionsAsText = p.parse(r.responseBody()).getAsJsonObject()
+            .get("scm-data").getAsJsonObject()
+            .get(GitHubPRBuildPlugin.BRANCH_TO_REVISION_MAP).getAsString();
+
+        JsonObject revisions = p.parse(revisionsAsText).getAsJsonObject();
+
+        assertTrue(revisions.has("master"));
+        assertTrue(revisions.has("branch-to-merge"));
+
+        assertEquals("9f1da8b8480a9c83e48ca91ae5879fe61d7309d2", revisions.get("master").getAsString());
+        assertEquals("4244e471fda77eb230e76a8ed7f962a6ae1c49b4", revisions.get("branch-to-merge").getAsString());
     }
 
     @Ignore

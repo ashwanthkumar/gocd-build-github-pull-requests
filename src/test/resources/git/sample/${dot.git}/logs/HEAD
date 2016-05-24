@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 449d376e45bea7a2c8a34a229a4ed93cfaa746f1 Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464105727 +0200	commit (initial): initial commit
+449d376e45bea7a2c8a34a229a4ed93cfaa746f1 4b8cc935b40a36e18afc4b2dc6e0a6d15cf68dae Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464109832 +0200	commit: Added .gitignore
+4b8cc935b40a36e18afc4b2dc6e0a6d15cf68dae 449d376e45bea7a2c8a34a229a4ed93cfaa746f1 Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464110900 +0200	reset: moving to 449d376e45bea7a2c8a34a229a4ed93cfaa746f1
+449d376e45bea7a2c8a34a229a4ed93cfaa746f1 b33d7b5999724f5b7640bb9f95dd2e0f761a7384 Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464110987 +0200	commit: Updated readme
