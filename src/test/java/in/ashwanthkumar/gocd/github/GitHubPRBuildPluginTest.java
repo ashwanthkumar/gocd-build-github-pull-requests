@@ -5,6 +5,7 @@ import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.Revision;
+import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
@@ -17,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
 import static java.util.Arrays.asList;
@@ -24,6 +26,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class GitHubPRBuildPluginTest {
@@ -99,25 +102,24 @@ public class GitHubPRBuildPluginTest {
         verifyValidationSuccess("git@github.com:ashwanthkumar/baz");
     }
 
-    @Ignore
     @Test
-    public void shouldGetLatestRevision() {
+    public void shouldGetSampleLatestRevision() {
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
-        plugin.setProvider(new GitHubProvider());
+        plugin.setProvider(new GitProvider());
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
         GoPluginApiRequest request = mock(GoPluginApiRequest.class);
-        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"target/test-classes/git/sample\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
 
         pluginSpy.handleGetLatestRevision(request);
 
         ArgumentCaptor<GitConfig> gitConfig = ArgumentCaptor.forClass(GitConfig.class);
-        ArgumentCaptor<String> prId = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> branch = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Revision> revision = ArgumentCaptor.forClass(Revision.class);
-        verify(pluginSpy).getRevisionMap(gitConfig.capture(), prId.capture(), revision.capture());
+        verify(pluginSpy).getRevisionMap(gitConfig.capture(), branch.capture(), revision.capture());
 
-        assertThat(prId.getValue(), is("master"));
-        assertThat(revision.getValue().getRevision(), is("a683e0a27e66e710126f7697337efca052396a32"));
+        assertThat(branch.getValue(), is("master"));
+        assertThat(revision.getValue().getRevision(), is("449d376e45bea7a2c8a34a229a4ed93cfaa746f1"));
     }
 
     @Ignore
