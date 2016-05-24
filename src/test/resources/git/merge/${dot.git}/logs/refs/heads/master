@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 58fe143956fc859f55c9f545c3ec4cec8d959425 Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464111305 +0200	commit (initial): initial commit
+58fe143956fc859f55c9f545c3ec4cec8d959425 ee44e53158c5718fcc3a33a4edc3ac47129e83d6 Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464111370 +0200	merge branch-to-merge: Fast-forward
+ee44e53158c5718fcc3a33a4edc3ac47129e83d6 58fe143956fc859f55c9f545c3ec4cec8d959425 Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464111392 +0200	reset: moving to 58fe143956fc859f55c9f545c3ec4cec8d959425
+58fe143956fc859f55c9f545c3ec4cec8d959425 9f1da8b8480a9c83e48ca91ae5879fe61d7309d2 Alexander Yastrebov <alexander.yastrebov@zalando.de> 1464111450 +0200	commit: Added file

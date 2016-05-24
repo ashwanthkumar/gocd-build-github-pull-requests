@@ -1,6 +1,8 @@
 package in.ashwanthkumar.gocd.github;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.model.GitConfig;
@@ -25,6 +27,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -140,6 +143,33 @@ public class GitHubPRBuildPluginTest {
 
         assertThat(branch.getValue(), is("master"));
         assertThat(revision.getValue().getRevision(), is("b33d7b5999724f5b7640bb9f95dd2e0f761a7384"));
+    }
+
+    @Test
+    public void shouldGetLatestRevisionSinceAfterMerge() {
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
+        plugin.setProvider(new GitProvider());
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"target/test-classes/git/merge\"}}, \"scm-data\":{\"BRANCH_TO_REVISION_MAP\":\"{\\\"branch-to-merge\\\":\\\"ee44e53158c5718fcc3a33a4edc3ac47129e83d6\\\", \\\"master\\\":\\\"58fe143956fc859f55c9f545c3ec4cec8d959425\\\"}\"}, flyweight-folder: \"" + TEST_DIR + "\"}");
+
+        GoPluginApiResponse r = pluginSpy.handleLatestRevisionSince(request);
+
+        JsonParser p = new JsonParser();
+
+        // For some reason BRANCH_TO_REVISION_MAP stored as string
+        String revisionsAsText = p.parse(r.responseBody()).getAsJsonObject()
+            .get("scm-data").getAsJsonObject()
+            .get(GitHubPRBuildPlugin.BRANCH_TO_REVISION_MAP).getAsString();
+
+        JsonObject revisions = p.parse(revisionsAsText).getAsJsonObject();
+
+        assertTrue(revisions.has("master"));
+        assertTrue(revisions.has("branch-to-merge"));
+
+        assertEquals("9f1da8b8480a9c83e48ca91ae5879fe61d7309d2", revisions.get("master").getAsString());
+        assertEquals("4244e471fda77eb230e76a8ed7f962a6ae1c49b4", revisions.get("branch-to-merge").getAsString());
     }
 
     @Ignore
