@@ -109,6 +109,7 @@
             </resource>
             <resource>
                 <directory>${resource.directory}</directory>
+                <filtering>true</filtering>
             </resource>
         </resources>
 
