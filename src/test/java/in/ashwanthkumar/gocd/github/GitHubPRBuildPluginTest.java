@@ -1,12 +1,16 @@
 package in.ashwanthkumar.gocd.github;
 
 import com.google.gson.Gson;
+import com.thoughtworks.go.plugin.api.GoApplicationAccessor;
+import com.thoughtworks.go.plugin.api.request.GoApiRequest;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
+import com.thoughtworks.go.plugin.api.response.DefaultGoApiResponse;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.GitHelper;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
+import in.ashwanthkumar.gocd.github.provider.gerrit.GerritProvider;
 import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
@@ -30,6 +34,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
+
 
 public class GitHubPRBuildPluginTest {
     public static final String TEST_DIR = "/tmp/" + UUID.randomUUID();
@@ -182,7 +187,7 @@ public class GitHubPRBuildPluginTest {
                 new GitProvider(),
                 gitFactory,
                 gitFolderFactory,
-                true
+                mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
@@ -204,7 +209,7 @@ public class GitHubPRBuildPluginTest {
                 new GitProvider(),
                 gitFactory,
                 gitFolderFactory,
-                true
+                mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
@@ -223,10 +228,10 @@ public class GitHubPRBuildPluginTest {
         GitFactory gitFactory = mock(GitFactory.class);
         GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
-                new GitProvider(),
+                new GerritProvider(),
                 gitFactory,
                 gitFolderFactory,
-                false
+                mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
 
@@ -362,5 +367,13 @@ public class GitHubPRBuildPluginTest {
             this.key = key;
             this.value = value;
         }
+    }
+
+    private GoApplicationAccessor mockGoApplicationAccessor() {
+        GoApplicationAccessor accessor = mock(GoApplicationAccessor.class);
+        DefaultGoApiResponse respose = new DefaultGoApiResponse(200);
+        respose.setResponseBody("{}");
+        when(accessor.submit(any(GoApiRequest.class))).thenReturn(respose);
+        return accessor;
     }
 }

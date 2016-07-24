@@ -1,9 +1,14 @@
 package in.ashwanthkumar.gocd.github.provider.github;
 
+import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
+import in.ashwanthkumar.gocd.github.settings.general.DefaultGeneralPluginConfigurationView;
+import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginConfigurationView;
+import in.ashwanthkumar.gocd.github.settings.scm.DefaultScmPluginConfigurationView;
+import in.ashwanthkumar.gocd.github.settings.scm.ScmPluginConfigurationView;
 import in.ashwanthkumar.gocd.github.util.URLUtils;
 import in.ashwanthkumar.utils.func.Function;
 import in.ashwanthkumar.utils.lang.StringUtils;
@@ -14,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 
@@ -24,6 +30,11 @@ public class GitHubProvider implements Provider {
     public static final String REF_SPEC = "+refs/pull/*/head:refs/remotes/origin/pull-request/*";
     public static final String REF_PATTERN = "refs/remotes/origin/pull-request/";
     public static final String PUBLIC_GITHUB_ENDPOINT = "https://api.github.com";
+
+    @Override
+    public GoPluginIdentifier getPluginId() {
+        return new GoPluginIdentifier("github.pr", Arrays.asList("1.0"));
+    }
 
     @Override
     public String getName() {
@@ -89,6 +100,16 @@ public class GitHubProvider implements Provider {
             data.put("PR_DESCRIPTION", prStatus.getDescription());
             data.put("PR_TITLE", prStatus.getTitle());
         }
+    }
+
+    @Override
+    public ScmPluginConfigurationView getScmConfigurationView() {
+        return new DefaultScmPluginConfigurationView();
+    }
+
+    @Override
+    public GeneralPluginConfigurationView getGeneralConfigurationView() {
+        return new DefaultGeneralPluginConfigurationView();
     }
 
     private PullRequestStatus getPullRequestStatus(GitConfig gitConfig, String prId, String prSHA) {

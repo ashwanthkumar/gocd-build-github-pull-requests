@@ -14,6 +14,7 @@ import com.tw.go.plugin.model.Revision;
 import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
+import in.ashwanthkumar.gocd.github.settings.scm.PluginConfigurationView;
 import in.ashwanthkumar.gocd.github.util.BranchFilter;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
@@ -25,6 +26,7 @@ import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static in.ashwanthkumar.gocd.github.util.JSONUtils.fromJSON;
 import static java.util.Arrays.asList;
 
 @Extension
@@ -38,11 +40,15 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     public static final String REQUEST_SCM_VIEW = "scm-view";
     public static final String REQUEST_VALIDATE_SCM_CONFIGURATION = "validate-scm-configuration";
     public static final String REQUEST_CHECK_SCM_CONNECTION = "check-scm-connection";
+    public static final String REQUEST_PLUGIN_CONFIGURATION = "go.plugin-settings.get-configuration";
+    public static final String REQUEST_PLUGIN_VIEW = "go.plugin-settings.get-view";
+    public static final String REQUEST_VALIDATE_PLUGIN_CONFIGURATION = "go.plugin-settings.validate-configuration";
+
+    public static final String GET_PLUGIN_SETTINGS = "go.processor.plugin-settings.get";
+
     public static final String REQUEST_LATEST_REVISION = "latest-revision";
     public static final String REQUEST_LATEST_REVISIONS_SINCE = "latest-revisions-since";
     public static final String REQUEST_CHECKOUT = "checkout";
-    public static final String BRANCH_BLACKLIST_PROPERTY_NAME = "branchblacklist";
-    public static final String BRANCH_WHITELIST_PROPERTY_NAME = "branchwhitelist";
 
     public static final String BRANCH_TO_REVISION_MAP = "BRANCH_TO_REVISION_MAP";
     private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
@@ -54,14 +60,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private Provider provider;
     private GitFactory gitFactory;
     private GitFolderFactory gitFolderFactory;
-    private boolean branchFilterEnabled;
+    private GoApplicationAccessor goApplicationAccessor;
 
     public GitHubPRBuildPlugin() {
         try {
             Properties properties = new Properties();
             properties.load(getClass().getResourceAsStream("/defaults.properties"));
 
-            branchFilterEnabled = Boolean.valueOf(properties.getProperty("branchFilterEnabled"));
             Class<?> providerClass = Class.forName(properties.getProperty("provider"));
             Constructor<?> constructor = providerClass.getConstructor();
             provider = (Provider) constructor.newInstance();
@@ -72,16 +77,16 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory, boolean branchFilterEnabled) {
+    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory, GoApplicationAccessor goApplicationAccessor) {
         this.provider = provider;
         this.gitFactory = gitFactory;
         this.gitFolderFactory = gitFolderFactory;
-        this.branchFilterEnabled = branchFilterEnabled;
+        this.goApplicationAccessor = goApplicationAccessor;
     }
 
     @Override
     public void initializeGoApplicationAccessor(GoApplicationAccessor goApplicationAccessor) {
-        // ignore
+        this.goApplicationAccessor = goApplicationAccessor;
     }
 
     @Override
@@ -95,7 +100,18 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 String message = "Failed to find template: " + e.getMessage();
                 return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, message);
             }
-        } else if (goPluginApiRequest.requestName().equals(REQUEST_VALIDATE_SCM_CONFIGURATION)) {
+        } else if (goPluginApiRequest.requestName().equals(REQUEST_PLUGIN_CONFIGURATION)) {
+            return handlePluginConfiguration();
+        } else if (goPluginApiRequest.requestName().equals(REQUEST_PLUGIN_VIEW)) {
+            try {
+                return handlePluginView();
+            } catch (IOException e) {
+                String message = "Failed to find template: " + e.getMessage();
+                return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, message);
+            }
+        }  else if (goPluginApiRequest.requestName().equals(REQUEST_VALIDATE_PLUGIN_CONFIGURATION)) {
+            return handlePluginValidation(goPluginApiRequest);
+        }  else if (goPluginApiRequest.requestName().equals(REQUEST_VALIDATE_SCM_CONFIGURATION)) {
             return handleSCMValidation(goPluginApiRequest);
         } else if (goPluginApiRequest.requestName().equals(REQUEST_CHECK_SCM_CONNECTION)) {
             return handleSCMCheckConnection(goPluginApiRequest);
@@ -109,6 +125,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         return renderJSON(NOT_FOUND_RESPONSE_CODE, null);
     }
 
+    private GoPluginApiResponse handlePluginValidation(GoPluginApiRequest goPluginApiRequest) {
+        return renderJSON(SUCCESS_RESPONSE_CODE, Collections.emptyList());
+    }
+
     @Override
     public GoPluginIdentifier pluginIdentifier() {
         return new GoPluginIdentifier(EXTENSION_NAME, goSupportedVersions);
@@ -118,31 +138,40 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         this.provider = provider;
     }
 
-    private GoPluginApiResponse handleSCMConfiguration() {
-        Map<String, Object> response = new HashMap<String, Object>();
-        response.put("url", createField("URL", null, true, true, false, "0"));
-        response.put("username", createField("Username", null, false, false, false, "1"));
-        response.put("password", createField("Password", null, false, false, true, "2"));
-        if (branchFilterEnabled) {
-            response.put(BRANCH_WHITELIST_PROPERTY_NAME, createField("Whitelisted branches", "", true, false, false, "3"));
-            response.put(BRANCH_BLACKLIST_PROPERTY_NAME, createField("Blacklisted branches", "", true, false, false, "4"));
-        }
-        return renderJSON(SUCCESS_RESPONSE_CODE, response);
+    private GoPluginApiResponse handlePluginView() throws IOException {
+        return getPluginView(provider, provider.getGeneralConfigurationView());
+    }
+
+    private GoPluginApiResponse handlePluginConfiguration() {
+        return getPluginConfiguration(provider.getGeneralConfigurationView());
     }
 
     private GoPluginApiResponse handleSCMView() throws IOException {
-        Map<String, Object> response = new HashMap<String, Object>();
-        response.put("displayValue", provider.getName());
-        if (branchFilterEnabled) {
-            response.put("template", getFileContents("/scm.template.branch.filter.html"));
+        return getPluginView(provider, provider.getScmConfigurationView());
+    }
+
+    private GoPluginApiResponse handleSCMConfiguration() {
+        return getPluginConfiguration(provider.getScmConfigurationView());
+    }
+
+    private GoPluginApiResponse getPluginView(Provider provider, PluginConfigurationView view) throws IOException {
+        if (view.hasConfigurationView()) {
+            Map<String, Object> response = new HashMap<String, Object>();
+            response.put("displayValue", provider.getName());
+            response.put("template", getFileContents(view.templateName()));
+            return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } else {
-            response.put("template", getFileContents("/scm.template.html"));
+            return renderJSON(NOT_FOUND_RESPONSE_CODE, null);
         }
+    }
+
+    private GoPluginApiResponse getPluginConfiguration(PluginConfigurationView view) {
+        Map<String, Object> response = view.fields();
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
 
     private GoPluginApiResponse handleSCMValidation(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         final Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         final GitConfig gitConfig = getGitConfig(configuration);
 
@@ -157,7 +186,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleSCMCheckConnection(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
 
@@ -175,7 +204,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GoPluginApiResponse handleGetLatestRevision(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
@@ -202,11 +231,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
         Map<String, String> scmData = (Map<String, String>) requestBodyMap.get("scm-data");
-        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) JSONUtils.fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
+        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
 
@@ -226,7 +255,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
             Map<String, String> newerRevisions = new HashMap<String, String>();
 
-            BranchFilter branchFilter = resolveBranchMatcher(configuration);
+            BranchFilter branchFilter = provider
+                    .getScmConfigurationView()
+                    .getBranchFilter(configuration);
 
             for (String branch : newBranchToRevisionMap.keySet()) {
                 if (branchFilter.isBranchValid(branch)) {
@@ -282,23 +313,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    private BranchFilter resolveBranchMatcher(Map<String, String> configuration) {
-        if (branchFilterEnabled) {
-            String blacklist = configuration.get(BRANCH_BLACKLIST_PROPERTY_NAME);
-            String whitelist = configuration.get(BRANCH_WHITELIST_PROPERTY_NAME);
-
-            return new BranchFilter(blacklist, whitelist);
-        } else {
-            return new BranchFilter();
-        }
-    }
-
     private boolean branchHasNewChange(String previousSHA, String latestSHA) {
         return previousSHA == null || !previousSHA.equals(latestSHA);
     }
 
     private GoPluginApiResponse handleCheckout(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) JSONUtils.fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
         String destinationFolder = (String) requestBodyMap.get("destination-folder");
@@ -369,17 +389,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         return keyValuePairs;
     }
 
-    private Map<String, Object> createField(String displayName, String defaultValue, boolean isPartOfIdentity, boolean isRequired, boolean isSecure, String displayOrder) {
-        Map<String, Object> fieldProperties = new HashMap<String, Object>();
-        fieldProperties.put("display-name", displayName);
-        fieldProperties.put("default-value", defaultValue);
-        fieldProperties.put("part-of-identity", isPartOfIdentity);
-        fieldProperties.put("required", isRequired);
-        fieldProperties.put("secure", isSecure);
-        fieldProperties.put("display-order", displayOrder);
-        return fieldProperties;
-    }
-
     public void validateUrl(GitConfig gitConfig, Map<String, Object> fieldMap) {
         if (StringUtil.isEmpty(gitConfig.getUrl())) {
             fieldMap.put("key", "url");
@@ -430,4 +439,5 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             }
         };
     }
+
 }

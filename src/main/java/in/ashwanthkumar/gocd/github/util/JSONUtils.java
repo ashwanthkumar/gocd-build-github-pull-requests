@@ -7,6 +7,10 @@ public class JSONUtils {
         return new GsonBuilder().create().fromJson(json, Object.class);
     }
 
+    public static <T> T fromJSON(String json, Class<T> type) {
+        return new GsonBuilder().create().fromJson(json, type);
+    }
+
     public static String toJSON(Object object) {
         return new GsonBuilder().create().toJson(object);
     }

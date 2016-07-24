@@ -106,6 +106,7 @@
         <resources>
             <resource>
                 <directory>src/main/resources/views</directory>
+                <targetPath>views/</targetPath>
             </resource>
             <resource>
                 <directory>${resource.directory}</directory>
