@@ -17,10 +17,10 @@ import in.ashwanthkumar.gocd.github.provider.gerrit.GerritProvider;
 import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
+import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginSettings;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
-import in.ashwanthkumar.gocd.github.util.PluginSettings;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -339,7 +339,7 @@ public class GitHubPRBuildPluginTest {
         status.schedulable = true;
         when(server.getPipelineStatus(anyString())).thenReturn(status);
 
-        when(serverFactory.getServer(any(PluginSettings.class))).thenReturn(server);
+        when(serverFactory.getServer(any(GeneralPluginSettings.class))).thenReturn(server);
         return serverFactory;
     }
 

@@ -18,8 +18,12 @@ import in.ashwanthkumar.gocd.github.jsonapi.PipelineStatus;
 import in.ashwanthkumar.gocd.github.jsonapi.Server;
 import in.ashwanthkumar.gocd.github.jsonapi.ServerFactory;
 import in.ashwanthkumar.gocd.github.provider.Provider;
+import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginSettings;
 import in.ashwanthkumar.gocd.github.settings.scm.PluginConfigurationView;
-import in.ashwanthkumar.gocd.github.util.*;
+import in.ashwanthkumar.gocd.github.util.BranchFilter;
+import in.ashwanthkumar.gocd.github.util.GitFactory;
+import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
+import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.IOUtils;
 
@@ -488,17 +492,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         };
     }
 
-    public PluginSettings getPluginSettings() {
+    public GeneralPluginSettings getPluginSettings() {
         DefaultGoApiRequest request =
                 new DefaultGoApiRequest(GET_PLUGIN_SETTINGS, "1.0", provider.getPluginId());
         request.setRequestBody("{\"plugin-id\": \"" + provider.getPluginId().getExtension() + "\"}");
         String response = goApplicationAccessor.submit(request).responseBody();
         Map<String, Object> settings = JSONUtils.fromJSON(response, Map.class);
 
-        return new PluginSettings(
-                (String)settings.get("go_api_host"),
-                (String)settings.get("go_api_username"),
-                (String)settings.get("go_api_password")
-        );
+        return provider.getGeneralConfigurationView().getSettings(settings);
     }
 }

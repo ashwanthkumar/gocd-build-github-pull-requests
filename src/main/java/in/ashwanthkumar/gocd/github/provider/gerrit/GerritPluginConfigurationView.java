@@ -1,6 +1,8 @@
 package in.ashwanthkumar.gocd.github.provider.gerrit;
 
+import in.ashwanthkumar.gocd.github.settings.general.DefaultGeneralPluginSettings;
 import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginConfigurationView;
+import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginSettings;
 import in.ashwanthkumar.gocd.github.util.FieldFactory;
 
 import java.util.HashMap;
@@ -26,5 +28,15 @@ public class GerritPluginConfigurationView implements GeneralPluginConfiguration
     @Override
     public boolean hasConfigurationView() {
         return true;
+    }
+
+    public GeneralPluginSettings getSettings(Map<String, Object> rawSettings) {
+        GeneralPluginSettings settings = new DefaultGeneralPluginSettings(
+                (String)rawSettings.get("go_api_host"),
+                (String)rawSettings.get("go_api_username"),
+                (String)rawSettings.get("go_api_password")
+        );
+
+        return settings;
     }
 }

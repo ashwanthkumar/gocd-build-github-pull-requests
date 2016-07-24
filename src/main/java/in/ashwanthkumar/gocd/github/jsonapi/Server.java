@@ -1,7 +1,7 @@
 package in.ashwanthkumar.gocd.github.jsonapi;
 
 import com.thoughtworks.go.plugin.api.logging.Logger;
-import in.ashwanthkumar.gocd.github.util.PluginSettings;
+import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginSettings;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
@@ -15,18 +15,18 @@ import static in.ashwanthkumar.utils.lang.StringUtils.isEmpty;
 public class Server {
     private Logger LOG = Logger.getLoggerFor(Server.class);
 
-    private PluginSettings settings;
+    private GeneralPluginSettings settings;
     private HttpConnectionUtil httpConnectionUtil;
 
     /**
      * Construct a new server object, using credentials from PluginSettings.
      */
-    public Server(PluginSettings settings) {
+    public Server(GeneralPluginSettings settings) {
         this.settings = settings;
         httpConnectionUtil = new HttpConnectionUtil();
     }
 
-    Server(PluginSettings settings, HttpConnectionUtil httpConnectionUtil) {
+    Server(GeneralPluginSettings settings, HttpConnectionUtil httpConnectionUtil) {
         this.settings = settings;
         this.httpConnectionUtil = httpConnectionUtil;
     }
@@ -43,8 +43,8 @@ public class Server {
 
         HttpURLConnection request = httpConnectionUtil.getConnection(normalizedUrl);
 
-        final String login = settings.getGoUsername();
-        final String password = settings.getGoPassword();
+        final String login = settings.getGoApiUsername();
+        final String password = settings.getGoApiPassword();
         // Add in our HTTP authorization credentials if we have them.
         if (!isEmpty(login) && !isEmpty(password)) {
             String userpass = login + ":" + password;
