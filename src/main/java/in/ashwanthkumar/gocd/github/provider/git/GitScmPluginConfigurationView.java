@@ -1,6 +1,7 @@
 package in.ashwanthkumar.gocd.github.provider.git;
 
 import in.ashwanthkumar.gocd.github.settings.scm.DefaultScmPluginConfigurationView;
+import in.ashwanthkumar.gocd.github.settings.scm.ScmPluginSettings;
 import in.ashwanthkumar.gocd.github.util.BranchFilter;
 import in.ashwanthkumar.gocd.github.util.FieldFactory;
 
@@ -27,11 +28,27 @@ public class GitScmPluginConfigurationView extends DefaultScmPluginConfiguration
     }
 
     @Override
-    public BranchFilter getBranchFilter(Map<String, String> configuration) {
-        String blacklist = configuration.get(BRANCH_BLACKLIST_PROPERTY_NAME);
-        String whitelist = configuration.get(BRANCH_WHITELIST_PROPERTY_NAME);
+    public BranchFilter getBranchFilter(ScmPluginSettings scmSettings) {
+        GitScmPluginSettings gitScmSettings = (GitScmPluginSettings) scmSettings;
 
-        return new BranchFilter(blacklist, whitelist);
+        return new BranchFilter(
+                gitScmSettings.getBranchBlacklist(),
+                gitScmSettings.getBranchWhitelist()
+        );
     }
 
+    @Override
+    public ScmPluginSettings getSettings(Map<String, String> rawSettings) {
+        ScmPluginSettings settings = new GitScmPluginSettings(
+                rawSettings.get("url"),
+                rawSettings.get("username"),
+                rawSettings.get("password"),
+                null,
+                rawSettings.get("pipeline_name"),
+                rawSettings.get(BRANCH_BLACKLIST_PROPERTY_NAME),
+                rawSettings.get(BRANCH_WHITELIST_PROPERTY_NAME)
+        );
+
+        return settings;
+    }
 }

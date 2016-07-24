@@ -25,12 +25,24 @@ public class DefaultScmPluginConfigurationView implements ScmPluginConfiguration
     }
 
     @Override
-    public BranchFilter getBranchFilter(Map<String, String> configuration) {
+    public BranchFilter getBranchFilter(ScmPluginSettings scmSettings) {
         return new BranchFilter();
     }
 
     @Override
     public boolean hasConfigurationView() {
         return true;
+    }
+
+    public ScmPluginSettings getSettings(Map<String, String> rawSettings) {
+        ScmPluginSettings settings = new DefaultScmPluginSettings(
+                rawSettings.get("url"),
+                rawSettings.get("username"),
+                rawSettings.get("password"),
+                null,
+                rawSettings.get("pipeline_name")
+        );
+
+        return settings;
     }
 }

@@ -80,7 +80,7 @@ public class GitHubPRBuildPluginTest {
 
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
         plugin.setProvider(new GitHubProvider());
-        GitConfig gitConfig = plugin.getGitConfig(configuration);
+        GitConfig gitConfig = plugin.getGitConfig(plugin.getProvider().getScmConfigurationView().getSettings(configuration));
 
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is("config-username"));
@@ -89,7 +89,7 @@ public class GitHubPRBuildPluginTest {
         configuration.remove("username");
         configuration.remove("password");
 
-        gitConfig = plugin.getGitConfig(configuration);
+        gitConfig = plugin.getGitConfig(plugin.getProvider().getScmConfigurationView().getSettings(configuration));
 
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is(usernameProperty));

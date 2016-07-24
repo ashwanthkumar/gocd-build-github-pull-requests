@@ -20,6 +20,7 @@ import in.ashwanthkumar.gocd.github.jsonapi.ServerFactory;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginSettings;
 import in.ashwanthkumar.gocd.github.settings.scm.PluginConfigurationView;
+import in.ashwanthkumar.gocd.github.settings.scm.ScmPluginSettings;
 import in.ashwanthkumar.gocd.github.util.BranchFilter;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
@@ -148,6 +149,16 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         this.provider = provider;
     }
 
+    public Provider getProvider() {
+        return provider;
+    }
+
+    GitConfig getGitConfig(ScmPluginSettings scmPluginSettings) {
+        GitConfig gitConfig = scmPluginSettings.getGitConfig();
+        provider.addConfigData(gitConfig);
+        return gitConfig;
+    }
+
     private GoPluginApiResponse handlePluginView() throws IOException {
         return getPluginView(provider, provider.getGeneralConfigurationView());
     }
@@ -183,7 +194,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private GoPluginApiResponse handleSCMValidation(GoPluginApiRequest goPluginApiRequest) {
         Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         final Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
-        final GitConfig gitConfig = getGitConfig(configuration);
+        ScmPluginSettings scmSettings = provider.getScmConfigurationView().getSettings(configuration);
+
+        final GitConfig gitConfig = getGitConfig(scmSettings);
 
         List<Map<String, Object>> response = new ArrayList<Map<String, Object>>();
         validate(response, new FieldValidator() {
@@ -198,7 +211,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private GoPluginApiResponse handleSCMCheckConnection(GoPluginApiRequest goPluginApiRequest) {
         Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
-        GitConfig gitConfig = getGitConfig(configuration);
+        ScmPluginSettings scmSettings = provider.getScmConfigurationView().getSettings(configuration);
+
+        GitConfig gitConfig = getGitConfig(scmSettings);
 
         Map<String, Object> response = new HashMap<String, Object>();
         List<String> messages = new ArrayList<String>();
@@ -216,7 +231,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     GoPluginApiResponse handleGetLatestRevision(GoPluginApiRequest goPluginApiRequest) {
         Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
-        GitConfig gitConfig = getGitConfig(configuration);
+
+        ScmPluginSettings scmSettings = provider.getScmConfigurationView().getSettings(configuration);
+
+        GitConfig gitConfig = getGitConfig(scmSettings);
+
+
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.info(String.format("Flyweight: %s", flyweightFolder));
 
@@ -243,12 +263,15 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
         Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
-        GitConfig gitConfig = getGitConfig(configuration);
+        ScmPluginSettings scmSettings = provider.getScmConfigurationView().getSettings(configuration);
+
+        GitConfig gitConfig = getGitConfig(scmSettings);
+
         Map<String, String> scmData = (Map<String, String>) requestBodyMap.get("scm-data");
         Map<String, String> oldBranchToRevisionMap = (Map<String, String>) fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
-        Option<String> pipelineName = Option.option(configuration.get("pipeline_name"));
+        Option<String> pipelineName = Option.option(scmSettings.getPipelineName());
 
         try {
             GitHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(flyweightFolder));
@@ -268,7 +291,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
             BranchFilter branchFilter = provider
                     .getScmConfigurationView()
-                    .getBranchFilter(configuration);
+                    .getBranchFilter(scmSettings);
+
             Server server = serverFactory.getServer(getPluginSettings());
 
             for (String branch : newBranchToRevisionMap.keySet()) {
@@ -371,8 +395,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private GoPluginApiResponse handleCheckout(GoPluginApiRequest goPluginApiRequest) {
         Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
+
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
-        GitConfig gitConfig = getGitConfig(configuration);
+        ScmPluginSettings scmSettings = provider.getScmConfigurationView().getSettings(configuration);
+
+        GitConfig gitConfig = getGitConfig(scmSettings);
+        provider.addConfigData(gitConfig);
+
         String destinationFolder = (String) requestBodyMap.get("destination-folder");
         Map<String, Object> revisionMap = (Map<String, Object>) requestBodyMap.get("revision");
         String revision = (String) revisionMap.get("revision");
@@ -392,12 +421,6 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             LOGGER.warn("checkout: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
         }
-    }
-
-    GitConfig getGitConfig(Map<String, String> configuration) {
-        GitConfig gitConfig = new GitConfig(configuration.get("url"), configuration.get("username"), configuration.get("password"), null);
-        provider.addConfigData(gitConfig);
-        return gitConfig;
     }
 
     private void validate(List<Map<String, Object>> response, FieldValidator fieldValidator) {

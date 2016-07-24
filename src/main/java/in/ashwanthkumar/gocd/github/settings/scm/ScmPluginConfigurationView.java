@@ -6,5 +6,7 @@ import java.util.Map;
 
 public interface ScmPluginConfigurationView extends PluginConfigurationView {
 
-    BranchFilter getBranchFilter(Map<String, String> configuration);
+    BranchFilter getBranchFilter(ScmPluginSettings scmSettings);
+
+    ScmPluginSettings getSettings(Map<String, String> rawSettings);
 }
