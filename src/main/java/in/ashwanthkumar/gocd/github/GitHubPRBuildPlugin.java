@@ -124,8 +124,8 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("username", createField("Username", null, false, false, false, "1"));
         response.put("password", createField("Password", null, false, false, true, "2"));
         if (branchFilterEnabled) {
-            response.put(BRANCH_WHITELIST_PROPERTY_NAME, createField("Whitelisted branches", "", false, false, false, "3"));
-            response.put(BRANCH_BLACKLIST_PROPERTY_NAME, createField("Blacklisted branches", "", false, false, false, "4"));
+            response.put(BRANCH_WHITELIST_PROPERTY_NAME, createField("Whitelisted branches", "", true, false, false, "3"));
+            response.put(BRANCH_BLACKLIST_PROPERTY_NAME, createField("Blacklisted branches", "", true, false, false, "4"));
         }
         return renderJSON(SUCCESS_RESPONSE_CODE, response);
     }
