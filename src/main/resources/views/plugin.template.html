@@ -1,0 +1,15 @@
+<div class="form_item_block">
+    <label>Go API Host:</label>
+    <input type="text" ng-model="go_api_host" ng-required="true"/>
+    <span class="form_error" ng-show="GOINPUTNAME[go_api_host].$error.server">{{ GOINPUTNAME[go_api_host].$error.server }}</span>
+</div>
+<div class="form_item_block">
+    <label>Go API Username:</label>
+    <input type="text" ng-model="go_api_username" ng-required="true"/>
+    <span class="form_error" ng-show="GOINPUTNAME[go_api_username].$error.server">{{ GOINPUTNAME[go_api_username].$error.server }}</span>
+</div>
+<div class="form_item_block">
+    <label>Go API Password:</label>
+    <input type="password" ng-model="go_api_password" ng-required="true"/>
+    <span class="form_error" ng-show="GOINPUTNAME[go_api_password].$error.server">{{ GOINPUTNAME[go_api_password].$error.server }}</span>
+</div>

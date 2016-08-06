@@ -23,9 +23,9 @@ public class GitHubProviderTest extends AbstractProviderTest {
         PluginConfigurationView scmConfigurationView = getScmView();
 
         assertThat(scmConfigurationView.fields().keySet(),
-                   hasItems("url", "username", "password")
+                   hasItems("url", "username", "password", "pipeline_name")
         );
-        assertThat(scmConfigurationView.fields().size(), is(3));
+        assertThat(scmConfigurationView.fields().size(), is(4));
     }
 
     @Test
@@ -34,6 +34,13 @@ public class GitHubProviderTest extends AbstractProviderTest {
 
         assertThat(generalConfigurationView.templateName(), is(""));
         assertThat(generalConfigurationView.hasConfigurationView(), is(false));
+    }
+
+    @Test
+    public void shouldReturnCorrectGeneralSettingsFields() throws Exception {
+        PluginConfigurationView generalConfigurationView = getGeneralView();
+
+        assertThat(generalConfigurationView.fields().size(), is(0));
     }
 
     @Override

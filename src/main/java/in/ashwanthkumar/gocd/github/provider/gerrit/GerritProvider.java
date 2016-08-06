@@ -4,7 +4,6 @@ import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
 import com.tw.go.plugin.HelperFactory;
 import com.tw.go.plugin.model.GitConfig;
 import in.ashwanthkumar.gocd.github.provider.Provider;
-import in.ashwanthkumar.gocd.github.settings.general.DefaultGeneralPluginConfigurationView;
 import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginConfigurationView;
 import in.ashwanthkumar.gocd.github.settings.scm.DefaultScmPluginConfigurationView;
 import in.ashwanthkumar.gocd.github.settings.scm.ScmPluginConfigurationView;
@@ -63,6 +62,6 @@ public class GerritProvider implements Provider {
 
     @Override
     public GeneralPluginConfigurationView getGeneralConfigurationView() {
-        return new DefaultGeneralPluginConfigurationView();
+        return new GerritPluginConfigurationView();
     }
 }

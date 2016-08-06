@@ -10,6 +10,9 @@ import com.tw.go.plugin.GitHelper;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
+import in.ashwanthkumar.gocd.github.jsonapi.PipelineStatus;
+import in.ashwanthkumar.gocd.github.jsonapi.Server;
+import in.ashwanthkumar.gocd.github.jsonapi.ServerFactory;
 import in.ashwanthkumar.gocd.github.provider.gerrit.GerritProvider;
 import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
@@ -17,6 +20,7 @@ import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
+import in.ashwanthkumar.gocd.github.util.PluginSettings;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -180,13 +184,14 @@ public class GitHubPRBuildPluginTest {
     }
 
     @Test
-    public void shouldBuildWhitelistedBranch() {
+    public void shouldBuildWhitelistedBranch() throws Exception {
         GitFactory gitFactory = mock(GitFactory.class);
         GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GitProvider(),
                 gitFactory,
                 gitFolderFactory,
+                mockServerFactory(),
                 mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
@@ -202,13 +207,14 @@ public class GitHubPRBuildPluginTest {
     }
 
     @Test
-    public void shouldNotBuildBlacklistedBranch() {
+    public void shouldNotBuildBlacklistedBranch() throws Exception {
         GitFactory gitFactory = mock(GitFactory.class);
         GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GitProvider(),
                 gitFactory,
                 gitFolderFactory,
+                mockServerFactory(),
                 mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
@@ -224,13 +230,14 @@ public class GitHubPRBuildPluginTest {
     }
 
     @Test
-    public void shouldBuildBlacklistedBranchIfBlacklistingNotEnabled() {
+    public void shouldBuildBlacklistedBranchIfBlacklistingNotEnabled() throws Exception {
         GitFactory gitFactory = mock(GitFactory.class);
         GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GerritProvider(),
                 gitFactory,
                 gitFolderFactory,
+                mockServerFactory(),
                 mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
@@ -323,6 +330,25 @@ public class GitHubPRBuildPluginTest {
                 assertThat((String) ((Map) response.get(i)).get("message"), is(pairs.get(i).value));
             }
         }
+    }
+
+    private ServerFactory mockServerFactory() throws Exception {
+        ServerFactory serverFactory = mock(ServerFactory.class);
+        Server server = mock(Server.class);
+        PipelineStatus status = new PipelineStatus();
+        status.schedulable = true;
+        when(server.getPipelineStatus(anyString())).thenReturn(status);
+
+        when(serverFactory.getServer(any(PluginSettings.class))).thenReturn(server);
+        return serverFactory;
+    }
+
+    private GoApplicationAccessor mockApplicationAccessor() {
+        GoApplicationAccessor accessor = mock(GoApplicationAccessor.class);
+        DefaultGoApiResponse respose = new DefaultGoApiResponse(200);
+        respose.setResponseBody("{}");
+        when(accessor.submit(any(GoApiRequest.class))).thenReturn(respose);
+        return accessor;
     }
 
     private GoPluginApiRequest createGoPluginApiRequest(final String requestName, final Map request) {

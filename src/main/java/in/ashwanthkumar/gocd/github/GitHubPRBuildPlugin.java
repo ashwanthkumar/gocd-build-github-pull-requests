@@ -5,6 +5,7 @@ import com.thoughtworks.go.plugin.api.GoPlugin;
 import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
 import com.thoughtworks.go.plugin.api.annotation.Extension;
 import com.thoughtworks.go.plugin.api.logging.Logger;
+import com.thoughtworks.go.plugin.api.request.DefaultGoApiRequest;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.GitHelper;
@@ -13,12 +14,13 @@ import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
 import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
+import in.ashwanthkumar.gocd.github.jsonapi.PipelineStatus;
+import in.ashwanthkumar.gocd.github.jsonapi.Server;
+import in.ashwanthkumar.gocd.github.jsonapi.ServerFactory;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.settings.scm.PluginConfigurationView;
-import in.ashwanthkumar.gocd.github.util.BranchFilter;
-import in.ashwanthkumar.gocd.github.util.GitFactory;
-import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
-import in.ashwanthkumar.gocd.github.util.JSONUtils;
+import in.ashwanthkumar.gocd.github.util.*;
+import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -31,6 +33,7 @@ import static java.util.Arrays.asList;
 
 @Extension
 public class GitHubPRBuildPlugin implements GoPlugin {
+
     private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
 
     public static final String EXTENSION_NAME = "scm";
@@ -61,6 +64,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     private GitFactory gitFactory;
     private GitFolderFactory gitFolderFactory;
     private GoApplicationAccessor goApplicationAccessor;
+    private ServerFactory serverFactory;
 
     public GitHubPRBuildPlugin() {
         try {
@@ -72,15 +76,17 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             provider = (Provider) constructor.newInstance();
             gitFactory = new GitFactory();
             gitFolderFactory = new GitFolderFactory();
+            serverFactory = new ServerFactory();
         } catch (Exception e) {
             throw new RuntimeException("could not create provider", e);
         }
     }
 
-    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory, GoApplicationAccessor goApplicationAccessor) {
+    public GitHubPRBuildPlugin(Provider provider, GitFactory gitFactory, GitFolderFactory gitFolderFactory, ServerFactory serverFactory, GoApplicationAccessor goApplicationAccessor) {
         this.provider = provider;
         this.gitFactory = gitFactory;
         this.gitFolderFactory = gitFolderFactory;
+        this.serverFactory = serverFactory;
         this.goApplicationAccessor = goApplicationAccessor;
     }
 
@@ -238,6 +244,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, String> oldBranchToRevisionMap = (Map<String, String>) fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
+        Option<String> pipelineName = Option.option(configuration.get("pipeline_name"));
 
         try {
             GitHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(flyweightFolder));
@@ -258,6 +265,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             BranchFilter branchFilter = provider
                     .getScmConfigurationView()
                     .getBranchFilter(configuration);
+            Server server = serverFactory.getServer(getPluginSettings());
 
             for (String branch : newBranchToRevisionMap.keySet()) {
                 if (branchFilter.isBranchValid(branch)) {
@@ -266,18 +274,40 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                         // Otherwise Go.CD skips other changes (revisions) in this call.
                         // You can think about it like if we always return a minimum item
                         // of a set with comparable items.
-                        String newValue = newBranchToRevisionMap.get(branch);
-                        newerRevisions.put(branch, newValue);
-                        oldBranchToRevisionMap.put(branch, newValue);
-                        break;
+
+                        // Only schedule new revision if the pipeline doesn't have
+                        // anything running at the moment. This should further prevent
+                        // skipping revisions when the revisions are built in-order
+                        // This is only checked if the pipeline name option is given
+                        if (canSchedule(server, pipelineName)) {
+                            String newValue = newBranchToRevisionMap.get(branch);
+
+                            LOGGER.debug("Schedule pipeline for branch " + branch + "@" + newValue);
+
+                            newerRevisions.put(branch, newValue);
+                            oldBranchToRevisionMap.put(branch, newValue);
+                            break;
+                        } else {
+                            // If can't schedule yet, just skip this round
+                            // and return the old branches to revision map
+                            // back so that we can continue where we left
+                            // on the next round of polling for changes
+
+                            LOGGER.info("Schedule " + branch + " later");
+
+                            Map<String, Object> response = new HashMap<String, Object>();
+                            Map<String, String> scmDataMap = new HashMap<String, String>();
+                            scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(oldBranchToRevisionMap));
+                            response.put("scm-data", scmDataMap);
+                            return renderJSON(SUCCESS_RESPONSE_CODE, response);
+                        }
                     }
-                } else {
-                    LOGGER.debug(String.format("Branch %s is filtered by branch matcher", branch));
                 }
             }
 
             if (newerRevisions.isEmpty()) {
-                LOGGER.debug(String.format("No updated PRs found. Old: %s New: %s", oldBranchToRevisionMap, newBranchToRevisionMap));
+                LOGGER.debug("No updated PRs found.");
+                LOGGER.debug(String.format("Old: %s New: %s", oldBranchToRevisionMap, newBranchToRevisionMap));
 
                 Map<String, Object> response = new HashMap<String, Object>();
                 Map<String, String> scmDataMap = new HashMap<String, String>();
@@ -310,6 +340,24 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         } catch (Throwable t) {
             LOGGER.warn("get latest revisions since: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
+        }
+    }
+
+    private boolean canSchedule(Server server, Option<String> pipelineName) throws IOException {
+        if (pipelineName.isEmpty()) {
+            LOGGER.debug("Pipeline name not given. Can schedule");
+            return true;
+        }
+
+        LOGGER.info(String.format("Check can schedule pipeline %s", pipelineName.get()));
+
+        PipelineStatus pipelineStatus = server.getPipelineStatus(pipelineName.get());
+        if (pipelineStatus != null) {
+            LOGGER.info(String.format("  Pipeline schedulable: %s", pipelineStatus.schedulable));
+            return pipelineStatus.schedulable;
+        } else {
+            LOGGER.debug("  Could not fetch pipeline status. Allow to schedule");
+            return true;
         }
     }
 
@@ -440,4 +488,17 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         };
     }
 
+    public PluginSettings getPluginSettings() {
+        DefaultGoApiRequest request =
+                new DefaultGoApiRequest(GET_PLUGIN_SETTINGS, "1.0", provider.getPluginId());
+        request.setRequestBody("{\"plugin-id\": \"" + provider.getPluginId().getExtension() + "\"}");
+        String response = goApplicationAccessor.submit(request).responseBody();
+        Map<String, Object> settings = JSONUtils.fromJSON(response, Map.class);
+
+        return new PluginSettings(
+                (String)settings.get("go_api_host"),
+                (String)settings.get("go_api_username"),
+                (String)settings.get("go_api_password")
+        );
+    }
 }
