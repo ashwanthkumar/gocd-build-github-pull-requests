@@ -2,6 +2,7 @@ package in.ashwanthkumar.gocd.github.jsonapi;
 
 import com.thoughtworks.go.plugin.api.logging.Logger;
 import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginSettings;
+import in.ashwanthkumar.gocd.github.settings.general.GoApiSettings;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
@@ -43,8 +44,9 @@ public class Server {
 
         HttpURLConnection request = httpConnectionUtil.getConnection(normalizedUrl);
 
-        final String login = settings.getGoApiUsername();
-        final String password = settings.getGoApiPassword();
+        GoApiSettings goApiSettings = (GoApiSettings) settings;
+        final String login = goApiSettings.getGoApiUsername();
+        final String password = goApiSettings.getGoApiPassword();
         // Add in our HTTP authorization credentials if we have them.
         if (!isEmpty(login) && !isEmpty(password)) {
             String userpass = login + ":" + password;
@@ -60,7 +62,9 @@ public class Server {
 
     public PipelineStatus getPipelineStatus(String pipelineName)
             throws MalformedURLException, IOException {
-        final String apiHost = settings.getGoApiHost();
+        GoApiSettings goApiSettings = (GoApiSettings) settings;
+
+        final String apiHost = goApiSettings.getGoApiHost();
         URL url = new URL(String.format("%s/go/api/pipelines/%s/status",
                 apiHost, pipelineName));
 

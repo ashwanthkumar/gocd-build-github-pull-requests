@@ -516,12 +516,17 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     public GeneralPluginSettings getPluginSettings() {
-        DefaultGoApiRequest request =
-                new DefaultGoApiRequest(GET_PLUGIN_SETTINGS, "1.0", provider.getPluginId());
-        request.setRequestBody("{\"plugin-id\": \"" + provider.getPluginId().getExtension() + "\"}");
-        String response = goApplicationAccessor.submit(request).responseBody();
-        Map<String, Object> settings = JSONUtils.fromJSON(response, Map.class);
-
-        return provider.getGeneralConfigurationView().getSettings(settings);
+        if (provider.getGeneralConfigurationView().hasConfigurationView()) {
+            DefaultGoApiRequest request =
+                    new DefaultGoApiRequest(GET_PLUGIN_SETTINGS, "1.0", provider.getPluginId());
+            request.setRequestBody("{\"plugin-id\": \"" + provider.getPluginId().getExtension() + "\"}");
+            String response = goApplicationAccessor.submit(request).responseBody();
+            Map<String, Object> settings = JSONUtils.fromJSON(response, Map.class);
+            return provider.getGeneralConfigurationView().getSettings(settings);
+        } else {
+            return provider
+                    .getGeneralConfigurationView()
+                    .getSettings(Collections.<String, Object>emptyMap());
+        }
     }
 }

@@ -41,7 +41,6 @@ public class GitProviderTest extends AbstractProviderTest {
         PluginConfigurationView generalConfigurationView = getGeneralView();
 
         assertThat(generalConfigurationView.fields().size(), is(0));
-
     }
 
     @Override

@@ -32,7 +32,7 @@ public class GerritProviderTest extends in.ashwanthkumar.gocd.github.provider.Ab
     public void shouldReturnCorrectGeneralSettingsTemplate() throws Exception {
         PluginConfigurationView generalConfigurationView = getGeneralView();
 
-        assertThat(generalConfigurationView.templateName(), is("/views/plugin.template.html"));
+        assertThat(generalConfigurationView.templateName(), is("/views/gerrit.plugin.template.html"));
         assertThat(generalConfigurationView.hasConfigurationView(), is(true));
     }
 

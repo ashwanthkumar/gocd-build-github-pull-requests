@@ -45,4 +45,5 @@ public class DefaultScmPluginConfigurationView implements ScmPluginConfiguration
 
         return settings;
     }
+
 }
