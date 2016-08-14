@@ -72,4 +72,15 @@ public class Server {
         return getResourceAs(url, PipelineStatus.class);
     }
 
+    public PipelineHistory getPipelineHistory(String pipelineName)
+            throws MalformedURLException, IOException {
+        GoApiSettings goApiSettings = (GoApiSettings) settings;
+
+        final String apiHost = goApiSettings.getGoApiHost();
+        URL url = new URL(String.format("%s/go/api/pipelines/%s/history",
+                apiHost, pipelineName));
+
+        LOG.info(String.format("Fetch pipeline %s history from %s", pipelineName, url));
+        return getResourceAs(url, PipelineHistory.class);
+    }
 }
