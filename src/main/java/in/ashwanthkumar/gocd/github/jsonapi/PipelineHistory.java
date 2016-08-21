@@ -20,7 +20,7 @@ public class PipelineHistory {
         return pipelines;
     }
 
-    boolean isPipelineRunningOrScheduled() {
+    public boolean isPipelineRunningOrScheduled() {
         for (Pipeline pipeline : pipelines) {
             if (pipeline.isRunningOrScheduled()) {
                 return true;

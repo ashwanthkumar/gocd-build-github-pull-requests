@@ -14,6 +14,7 @@ import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
 import com.tw.go.plugin.util.ListUtil;
 import com.tw.go.plugin.util.StringUtil;
+import in.ashwanthkumar.gocd.github.jsonapi.PipelineHistory;
 import in.ashwanthkumar.gocd.github.jsonapi.PipelineStatus;
 import in.ashwanthkumar.gocd.github.jsonapi.Server;
 import in.ashwanthkumar.gocd.github.jsonapi.ServerFactory;
@@ -371,20 +372,26 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         }
     }
 
-    private boolean canSchedule(Server server, Option<String> pipelineName) throws IOException {
-        if (pipelineName.isEmpty()) {
+    boolean canSchedule(Server server, Option<String> pipelineNameOption) throws IOException {
+        if (pipelineNameOption.isEmpty()) {
             LOGGER.debug("Pipeline name not given. Can schedule");
             return true;
         }
 
-        LOGGER.info(String.format("Check can schedule pipeline %s", pipelineName.get()));
+        final String pipelineName = pipelineNameOption.get();
 
-        PipelineStatus pipelineStatus = server.getPipelineStatus(pipelineName.get());
+        LOGGER.info(String.format("Check can schedule pipeline %s", pipelineName));
+
+        PipelineStatus pipelineStatus = server.getPipelineStatus(pipelineName);
         if (pipelineStatus != null) {
-            LOGGER.info(String.format("  Pipeline schedulable: %s", pipelineStatus.schedulable));
-            return pipelineStatus.schedulable;
+            if (pipelineStatus.schedulable) {
+                PipelineHistory pipelineHistory = server.getPipelineHistory(pipelineName);
+                return pipelineHistory == null
+                        || !pipelineHistory.isPipelineRunningOrScheduled();
+            } else {
+                return false;
+            }
         } else {
-            LOGGER.debug("  Could not fetch pipeline status. Allow to schedule");
             return true;
         }
     }

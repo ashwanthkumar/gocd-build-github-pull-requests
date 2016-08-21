@@ -7,4 +7,10 @@ public class PipelineStatus {
     @SerializedName("schedulable")
     public boolean schedulable;
 
+    public PipelineStatus() {
+    }
+
+    public PipelineStatus(boolean schedulable) {
+        this.schedulable = schedulable;
+    }
 }
