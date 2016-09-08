@@ -88,4 +88,33 @@ public class PipelineHistoryTest {
         assertThat(history.isPipelineRunningOrScheduled(), is(true));
     }
 
+    @Test
+    public void shouldShowPipelineNotRunnableWhenOneOfMultipleJobsBuilding() {
+
+        final boolean canRunPipeline = true;
+        final boolean preparingToSchedule = false;
+        final boolean canRunStage = true;
+
+        List<Pipeline> pipelines = asList(
+                new Pipeline(
+                        preparingToSchedule,
+                        canRunPipeline,
+                        asList(
+                            new Stage(
+                                        canRunStage,
+                                        asList(
+                                                new Job("Completed"),
+                                                new Job("Building"),
+                                                new Job("Completed")
+                                        )
+                                )
+                        )
+                )
+        );
+
+        PipelineHistory history = new PipelineHistory(pipelines);
+
+        assertThat(history.isPipelineRunningOrScheduled(), is(true));
+    }
+
 }

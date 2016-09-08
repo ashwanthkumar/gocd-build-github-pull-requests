@@ -35,6 +35,7 @@ public class StageTest {
                 {CanRun.NO, jobsRunningOrScheduled(true), true},
                 {CanRun.YES, jobsRunningOrScheduled(true), true},
                 {CanRun.YES, jobsRunningOrScheduled(false, false, true), true},
+                {CanRun.YES, jobsRunningOrScheduled(false, true, false), true},
         });
     }
 

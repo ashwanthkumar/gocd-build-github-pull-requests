@@ -44,6 +44,17 @@ public class PipelineTest {
                 {PreparingToSchedule.YES, CanRun.NO, stagesRunningOrScheduled(false), true},
                 {PreparingToSchedule.NO, CanRun.YES, stagesRunningOrScheduled(false), false},
                 {PreparingToSchedule.NO, CanRun.NO, stagesRunningOrScheduled(false), true},
+
+                // Multiple stages
+                {PreparingToSchedule.YES, CanRun.YES, stagesRunningOrScheduled(false, false, true), true},
+                {PreparingToSchedule.YES, CanRun.NO, stagesRunningOrScheduled(false, false, true), true},
+                {PreparingToSchedule.NO, CanRun.YES, stagesRunningOrScheduled(false, false, true), true},
+                {PreparingToSchedule.NO, CanRun.NO, stagesRunningOrScheduled(false, false, true), true},
+
+                {PreparingToSchedule.YES, CanRun.YES, stagesRunningOrScheduled(false, false, true, false), true},
+                {PreparingToSchedule.YES, CanRun.NO, stagesRunningOrScheduled(false, false, true, false), true},
+                {PreparingToSchedule.NO, CanRun.YES, stagesRunningOrScheduled(false, false, true, false), true},
+                {PreparingToSchedule.NO, CanRun.NO, stagesRunningOrScheduled(false, false, true, false), true},
         });
     }
 
