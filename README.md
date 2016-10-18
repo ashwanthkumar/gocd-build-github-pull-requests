@@ -9,6 +9,13 @@ Supported (as seperate plugins):
 * Stash repository for Pull Requests
 * Gerrit repository for Change Sets
 
+## Migration from Git Feature Branch plugin 1.2.x to 1.3
+
+Addition of the white and blacklist feature to Git Feature Branch plugin changes the identity of 
+the SCM material. This means that it may trigger automatically triggered pipelines that use 
+Git Feature Branch material. When moving from version 1.2.x to 1.3.x be sure to pause all 
+pipelines which shouldn't be triggered or be ready to cancel them in case they are triggered.
+
 ## Requirements
 These plugins require GoCD version v15.x or above.
 
