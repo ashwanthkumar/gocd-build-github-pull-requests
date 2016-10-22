@@ -1,0 +1,25 @@
+<div class="form_item_block">
+    <label>URL:<span class="asterisk">*</span></label>
+    <input type="text" ng-model="url" ng-required="true"/>
+    <span class="form_error" ng-show="GOINPUTNAME[url].$error.server">{{ GOINPUTNAME[url].$error.server }}</span>
+</div>
+<div class="form_item_block">
+    <label>Username:</label>
+    <input type="text" ng-model="username" ng-required="false"/>
+    <span class="form_error" ng-show="GOINPUTNAME[username].$error.server">{{ GOINPUTNAME[username].$error.server }}</span>
+</div>
+<div class="form_item_block">
+    <label>Password:</label>
+    <input type="password" ng-model="password" ng-required="false"/>
+    <span class="form_error" ng-show="GOINPUTNAME[password].$error.server">{{ GOINPUTNAME[password].$error.server }}</span>
+</div>
+<div class="form_item_block">
+    <label>Whitelisted brances:</label>
+    <input type="text" ng-model="branchwhitelist" ng-required="false"/>
+    <span class="form_error" ng-show="GOINPUTNAME[branchwhitelist].$error.server">{{ GOINPUTNAME[branchwhitelist].$error.server }}</span>
+</div>
+<div class="form_item_block">
+    <label>Blacklisted brances:</label>
+    <input type="text" ng-model="branchblacklist" ng-required="false"/>
+    <span class="form_error" ng-show="GOINPUTNAME[branchblacklist].$error.server">{{ GOINPUTNAME[branchblacklist].$error.server }}</span>
+</div>

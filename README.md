@@ -9,6 +9,13 @@ Supported (as seperate plugins):
 * Stash repository for Pull Requests
 * Gerrit repository for Change Sets
 
+## Migration from Git Feature Branch plugin 1.2.x to 1.3
+
+Addition of the white and blacklist feature to Git Feature Branch plugin changes the identity of 
+the SCM material. This means that it may trigger automatically triggered pipelines that use 
+Git Feature Branch material. When moving from version 1.2.x to 1.3.x be sure to pause all 
+pipelines which shouldn't be triggered or be ready to cancel them in case they are triggered.
+
 ## Requirements
 These plugins require GoCD version v15.x or above.
 
@@ -88,6 +95,19 @@ machine stash.vm.com
 login myusername
 password mypassword
 ```
+
+### Git
+
+#### Branch filtering
+
+Git feature branches support filtering the branches with whitelist and blacklist.
+Both lists support _glob_ syntax (`*`, `?`, `[...]`, `{...}`) and multiple branch patterns
+can be given as a comma separated list. The glob syntax is same as
+defined in Java's [FileSystem.getPathMatcher()](https://docs.oracle.com/javase/7/docs/api/java/nio/file/FileSystem.html#getPathMatcher%28java.lang.String%29)
+method. If neither blacklist or whitelist pattern is defined, all branches will be built.
+
+The blacklist takes precedence over whitelist. I.e. a branch will not be built if the
+blacklist pattern matches to the branch name.
 
 ## To Dos
 - Clean up the code esp. the JSON SerDe part

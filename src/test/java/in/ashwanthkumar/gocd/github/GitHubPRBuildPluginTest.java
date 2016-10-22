@@ -1,12 +1,21 @@
 package in.ashwanthkumar.gocd.github;
 
 import com.google.gson.Gson;
+import com.thoughtworks.go.plugin.api.GoApplicationAccessor;
+import com.thoughtworks.go.plugin.api.request.GoApiRequest;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
+import com.thoughtworks.go.plugin.api.response.DefaultGoApiResponse;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
+import com.tw.go.plugin.GitHelper;
 import com.tw.go.plugin.model.GitConfig;
+import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
+import in.ashwanthkumar.gocd.github.provider.gerrit.GerritProvider;
+import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
+import in.ashwanthkumar.gocd.github.util.GitFactory;
+import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -25,6 +34,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
+
 
 public class GitHubPRBuildPluginTest {
     public static final String TEST_DIR = "/tmp/" + UUID.randomUUID();
@@ -169,6 +179,105 @@ public class GitHubPRBuildPluginTest {
         assertThat(b.get("943"), is(not(nullValue())));
     }
 
+    @Test
+    public void shouldBuildWhitelistedBranch() {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GitProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockGoApplicationAccessor()
+        );
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mockRequest();
+        mockGitHelperToReturnBranch(gitFactory, "test-1");
+
+        GoPluginApiResponse response = pluginSpy.handleLatestRevisionSince(request);
+
+        Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
+        assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("{\"test-1\":\"abcdef01234567891\"}"));
+        assertThat(response.responseCode(), is(200));
+    }
+
+    @Test
+    public void shouldNotBuildBlacklistedBranch() {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GitProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockGoApplicationAccessor()
+        );
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mockRequest();
+        mockGitHelperToReturnBranch(gitFactory, "master");
+
+        GoPluginApiResponse response = pluginSpy.handleLatestRevisionSince(request);
+
+        Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
+        assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("null"));
+        assertThat(response.responseCode(), is(200));
+    }
+
+    @Test
+    public void shouldBuildBlacklistedBranchIfBlacklistingNotEnabled() {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GerritProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockGoApplicationAccessor()
+        );
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mockRequest();
+        mockGitHelperToReturnBranch(gitFactory, "master");
+
+        GoPluginApiResponse response = pluginSpy.handleLatestRevisionSince(request);
+
+        Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
+        assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("{\"master\":\"abcdef01234567891\"}"));
+        assertThat(response.responseCode(), is(200));
+    }
+
+    private GoPluginApiRequest mockRequest() {
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{\n" +
+                "    \"scm-configuration\": {\n" +
+                "        \"url\": {\n" +
+                "            \"value\": \"https://github.com/mdaliejaz/samplerepo.git\"\n" +
+                "        },\n" +
+                "        \"branchwhitelist\": {\n" +
+                "            \"value\": \"test*, feat*\"\n" +
+                "        },\n" +
+                "        \"branchblacklist\": {\n" +
+                "            \"value\": \"master\"\n" +
+                "        }\n" +
+                "    },\n" +
+                "    \"scm-data\": {\n" +
+                "        \"BRANCH_TO_REVISION_MAP\": \"{}\"\n" +
+                "    },\n" +
+                "    \"flyweight-folder\": \"\"\n" +
+                "}\n");
+        return request;
+    }
+
+    private void mockGitHelperToReturnBranch(GitFactory gitFactory, final String branch) {
+        GitHelper helper = mock(GitHelper.class);
+        when(gitFactory.create(any(GitConfig.class), any(File.class))).thenReturn(helper);
+        when(helper.getBranchToRevisionMap(anyString())).thenReturn(new HashMap<String, String>() {{
+            put(branch, "abcdef01234567891");
+        }});
+        when(helper.getDetailsForRevision("abcdef01234567891")).thenReturn(
+                new Revision("abcdef01234567891", new Date(), "", "", "", Collections.<ModifiedFile>emptyList())
+        );
+    }
+
     private void assertPRToRevisionMap(ArgumentCaptor<Map> prStatuses) {
         assertThat(prStatuses.getValue().size(), is(2));
         assertThat(((Map<String, String>) prStatuses.getValue()).get("1"), is("12c6ef2ae9843842e4800f2c4763388db81d6ec7"));
@@ -258,5 +367,13 @@ public class GitHubPRBuildPluginTest {
             this.key = key;
             this.value = value;
         }
+    }
+
+    private GoApplicationAccessor mockGoApplicationAccessor() {
+        GoApplicationAccessor accessor = mock(GoApplicationAccessor.class);
+        DefaultGoApiResponse respose = new DefaultGoApiResponse(200);
+        respose.setResponseBody("{}");
+        when(accessor.submit(any(GoApiRequest.class))).thenReturn(respose);
+        return accessor;
     }
 }
