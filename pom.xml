@@ -67,6 +67,13 @@
         </dependency>
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>sonatype</id>
+            <url>https://oss.sonatype.org/content/repositories/releases/</url>
+        </repository>
+    </repositories>
+
     <profiles>
         <profile>
             <id>github.pr</id>
