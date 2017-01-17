@@ -62,20 +62,20 @@ These plugins require GoCD version v15.x or above.
 ### Github
 
 **Authentication:**
-- You can create a file `~/.github` with the following contents: (Note: `~/.github` needs to be available on Go Server and on all Go Agent machines)
+- You can create a file `~/.github` with the following contents: (Note: `~/.github` needs to be available on Go Server)
 ```
 login=johndoe
 password=thisaintapassword
 ```
 
-- You can also generate & use oauth token. To do so create a file `~/.github` with the following contents: (Note: `~/.github` needs to be available on Go Server and on all Go Agent machines)
+- You can also generate & use oauth token. To do so create a file `~/.github` with the following contents: (Note: `~/.github` needs to be available on Go Server)
 ```
 login=johndoe
 oauth=thisaintatoken
 ```
 
 **Github Enterprise:**
-- If you intend to use this plugin with 'Github Enterprise' then add the following content in `~/.github` (Note: `~/.github` needs to be available on Go Server and on all Go Agent machines)
+- If you intend to use this plugin with 'Github Enterprise' then add the following content in `~/.github` (Note: `~/.github` needs to be available on Go Server)
 ```
 # for enterprise installations - Make sure to add /api/v3 to the hostname
 # ignore this field or have the value to https://api.github.com
