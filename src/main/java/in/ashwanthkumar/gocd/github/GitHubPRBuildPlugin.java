@@ -20,6 +20,7 @@ import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -343,7 +344,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GitConfig getGitConfig(Map<String, String> configuration) {
-        GitConfig gitConfig = new GitConfig(configuration.get("url"), configuration.get("username"), configuration.get("password"), null);
+        GitConfig gitConfig = new GitConfig(
+                configuration.get("url"),
+                configuration.get("username"),
+                configuration.get("password"),
+                StringUtils.trimToNull(configuration.get("defaultBranch")));
         provider.addConfigData(gitConfig);
         return gitConfig;
     }

@@ -20,6 +20,7 @@ public class DefaultScmPluginConfigurationView implements ScmPluginConfiguration
         response.put("url", FieldFactory.createForScm("URL", null, true, true, false, "0"));
         response.put("username", FieldFactory.createForScm("Username", null, false, false, false, "1"));
         response.put("password", FieldFactory.createForScm("Password", null, false, false, true, "2"));
+        response.put("defaultBranch", FieldFactory.createForScm("Default Branch", "master", false, false, false, "3"));
         return response;
     }
 
