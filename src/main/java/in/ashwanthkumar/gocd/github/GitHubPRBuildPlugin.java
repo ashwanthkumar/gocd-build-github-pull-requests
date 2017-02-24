@@ -19,6 +19,7 @@ import in.ashwanthkumar.gocd.github.util.BranchFilter;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
+import in.ashwanthkumar.utils.collections.Lists;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -291,6 +292,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 for (String branch : newerRevisions.keySet()) {
                     String latestSHA = newerRevisions.get(branch);
                     Revision revision = git.getDetailsForRevision(latestSHA);
+                    // patch for building merge commits
+                    if (ListUtil.isEmpty(revision.getModifiedFiles())) {
+                        revision.setModifiedFiles(Lists.of(new ModifiedFile("/dev/null", "deleted")));
+                    }
 
                     Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision);
                     revisions.add(revisionMap);
