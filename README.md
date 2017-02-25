@@ -1,5 +1,5 @@
 [![Build Status](https://snap-ci.com/ashwanthkumar/gocd-build-github-pull-requests/branch/master/build_image)](https://snap-ci.com/ashwanthkumar/gocd-build-github-pull-requests/branch/master)
-[![Build Status](https://travis-ci.org/ashwanthkumar/gocd-github-pull-request.svg?branch=master)](https://travis-ci.org/ashwanthkumar/gocd-github-pull-request)
+[![Build Status](https://travis-ci.org/ashwanthkumar/gocd-build-github-pull-requests.svg?branch=master)](https://travis-ci.org/ashwanthkumar/gocd-build-github-pull-requests)
 
 # GoCD - Git feature branch support
 This is a GoCD SCM plugin for Git feature branch support. [Discussion Thread](https://groups.google.com/d/topic/go-cd-dev/Rt_Y5G2VkOc/discussion)
