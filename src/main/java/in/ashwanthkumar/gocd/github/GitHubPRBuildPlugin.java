@@ -293,7 +293,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                     String latestSHA = newerRevisions.get(branch);
                     Revision revision = git.getDetailsForRevision(latestSHA);
                     // patch for building merge commits
-                    if (ListUtil.isEmpty(revision.getModifiedFiles())) {
+                    if (revision.isMergeCommit() && ListUtil.isEmpty(revision.getModifiedFiles())) {
                         revision.setModifiedFiles(Lists.of(new ModifiedFile("/dev/null", "deleted")));
                     }
 
