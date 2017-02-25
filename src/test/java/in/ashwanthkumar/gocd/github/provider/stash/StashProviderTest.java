@@ -23,9 +23,9 @@ public class StashProviderTest extends AbstractProviderTest {
         PluginConfigurationView scmConfigurationView = getScmView();
 
         assertThat(scmConfigurationView.fields().keySet(),
-                   hasItems("url", "username", "password")
+                   hasItems("url", "username", "password", "defaultBranch")
         );
-        assertThat(scmConfigurationView.fields().size(), is(3));
+        assertThat(scmConfigurationView.fields().size(), is(4));
     }
 
     @Test
