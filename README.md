@@ -60,6 +60,8 @@ These plugins require GoCD version v15.x or above.
 - Build status notifier plugin will update Pull Request with build status
 ![On successful run of new pipeline][13]
 
+- In order to force GoCD to build every commit the pipeline name has be defined for the material.
+
 ### Github
 
 **Authentication:**

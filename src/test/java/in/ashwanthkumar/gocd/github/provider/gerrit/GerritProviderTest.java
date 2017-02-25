@@ -23,17 +23,27 @@ public class GerritProviderTest extends in.ashwanthkumar.gocd.github.provider.Ab
         PluginConfigurationView scmConfigurationView = getScmView();
 
         assertThat(scmConfigurationView.fields().keySet(),
-                   hasItems("url", "username", "password")
+                   hasItems("url", "username", "password", "pipeline_name")
         );
-        assertThat(scmConfigurationView.fields().size(), is(3));
+        assertThat(scmConfigurationView.fields().size(), is(4));
     }
 
     @Test
     public void shouldReturnCorrectGeneralSettingsTemplate() throws Exception {
         PluginConfigurationView generalConfigurationView = getGeneralView();
 
-        assertThat(generalConfigurationView.templateName(), is(""));
-        assertThat(generalConfigurationView.hasConfigurationView(), is(false));
+        assertThat(generalConfigurationView.templateName(), is("/views/gerrit.plugin.template.html"));
+        assertThat(generalConfigurationView.hasConfigurationView(), is(true));
+    }
+
+    @Test
+    public void shouldReturnCorrectGeneralSettingsFields() throws Exception {
+        PluginConfigurationView generalConfigurationView = getGeneralView();
+
+        assertThat(generalConfigurationView.fields().keySet(),
+                hasItems("go_api_host", "go_api_username", "go_api_password")
+        );
+        assertThat(generalConfigurationView.fields().size(), is(3));
     }
 
     @Override

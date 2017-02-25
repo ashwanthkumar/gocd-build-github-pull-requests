@@ -21,4 +21,8 @@ public class DefaultGeneralPluginConfigurationView implements GeneralPluginConfi
     public boolean hasConfigurationView() {
         return false;
     }
+
+    public GeneralPluginSettings getSettings(Map<String, Object> rawSettings) {
+        return new DefaultGeneralPluginSettings();
+    }
 }

@@ -20,11 +20,12 @@ public class DefaultScmPluginConfigurationView implements ScmPluginConfiguration
         response.put("url", FieldFactory.createForScm("URL", null, true, true, false, "0"));
         response.put("username", FieldFactory.createForScm("Username", null, false, false, false, "1"));
         response.put("password", FieldFactory.createForScm("Password", null, false, false, true, "2"));
+        response.put("pipeline_name", FieldFactory.createForScm("Pipeline name", null, false, false, false, "3"));
         return response;
     }
 
     @Override
-    public BranchFilter getBranchFilter(Map<String, String> configuration) {
+    public BranchFilter getBranchFilter(ScmPluginSettings scmSettings) {
         return new BranchFilter();
     }
 
@@ -32,4 +33,17 @@ public class DefaultScmPluginConfigurationView implements ScmPluginConfiguration
     public boolean hasConfigurationView() {
         return true;
     }
+
+    public ScmPluginSettings getSettings(Map<String, String> rawSettings) {
+        ScmPluginSettings settings = new DefaultScmPluginSettings(
+                rawSettings.get("url"),
+                rawSettings.get("username"),
+                rawSettings.get("password"),
+                null,
+                rawSettings.get("pipeline_name")
+        );
+
+        return settings;
+    }
+
 }

@@ -10,13 +10,19 @@ import com.tw.go.plugin.GitHelper;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
+import in.ashwanthkumar.gocd.github.jsonapi.PipelineHistory;
+import in.ashwanthkumar.gocd.github.jsonapi.PipelineStatus;
+import in.ashwanthkumar.gocd.github.jsonapi.Server;
+import in.ashwanthkumar.gocd.github.jsonapi.ServerFactory;
 import in.ashwanthkumar.gocd.github.provider.gerrit.GerritProvider;
 import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
+import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginSettings;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
+import in.ashwanthkumar.utils.lang.option.Option;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -76,7 +82,7 @@ public class GitHubPRBuildPluginTest {
 
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
         plugin.setProvider(new GitHubProvider());
-        GitConfig gitConfig = plugin.getGitConfig(configuration);
+        GitConfig gitConfig = plugin.getGitConfig(plugin.getProvider().getScmConfigurationView().getSettings(configuration));
 
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is("config-username"));
@@ -85,7 +91,7 @@ public class GitHubPRBuildPluginTest {
         configuration.remove("username");
         configuration.remove("password");
 
-        gitConfig = plugin.getGitConfig(configuration);
+        gitConfig = plugin.getGitConfig(plugin.getProvider().getScmConfigurationView().getSettings(configuration));
 
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is(usernameProperty));
@@ -180,13 +186,14 @@ public class GitHubPRBuildPluginTest {
     }
 
     @Test
-    public void shouldBuildWhitelistedBranch() {
+    public void shouldBuildWhitelistedBranch() throws Exception {
         GitFactory gitFactory = mock(GitFactory.class);
         GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GitProvider(),
                 gitFactory,
                 gitFolderFactory,
+                mockServerFactory(),
                 mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
@@ -202,13 +209,14 @@ public class GitHubPRBuildPluginTest {
     }
 
     @Test
-    public void shouldNotBuildBlacklistedBranch() {
+    public void shouldNotBuildBlacklistedBranch() throws Exception {
         GitFactory gitFactory = mock(GitFactory.class);
         GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GitProvider(),
                 gitFactory,
                 gitFolderFactory,
+                mockServerFactory(),
                 mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
@@ -224,13 +232,14 @@ public class GitHubPRBuildPluginTest {
     }
 
     @Test
-    public void shouldBuildBlacklistedBranchIfBlacklistingNotEnabled() {
+    public void shouldBuildBlacklistedBranchIfBlacklistingNotEnabled() throws Exception {
         GitFactory gitFactory = mock(GitFactory.class);
         GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
                 new GerritProvider(),
                 gitFactory,
                 gitFolderFactory,
+                mockServerFactory(),
                 mockGoApplicationAccessor()
         );
         GitHubPRBuildPlugin pluginSpy = spy(plugin);
@@ -243,6 +252,107 @@ public class GitHubPRBuildPluginTest {
         Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
         assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("{\"master\":\"abcdef01234567891\"}"));
         assertThat(response.responseCode(), is(200));
+    }
+
+    @Test
+    public void shouldSchedule() throws Exception {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GerritProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockServerFactory(),
+                mockGoApplicationAccessor()
+        );
+
+        Server server = mock(Server.class);
+        when(server.getPipelineStatus("pipeline")).thenReturn(new PipelineStatus(true));
+        PipelineHistory pipelineHistory = mockPipelineHistory(false);
+        when(server.getPipelineHistory("pipeline")).thenReturn(pipelineHistory);
+
+        assertThat(plugin.canSchedule(server, Option.option("pipeline")), is(true));
+    }
+
+    @Test
+    public void shouldNotScheduleIfPipelineNotSchedulable() throws Exception {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GerritProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockServerFactory(),
+                mockGoApplicationAccessor()
+        );
+
+        Server server = mock(Server.class);
+        when(server.getPipelineStatus("pipeline")).thenReturn(new PipelineStatus(false));
+        PipelineHistory pipelineHistory = mockPipelineHistory(false);
+        when(server.getPipelineHistory("pipeline")).thenReturn(pipelineHistory);
+
+        assertThat(plugin.canSchedule(server, Option.option("pipeline")), is(false));
+    }
+
+    @Test
+    public void shouldNotScheduleIfPipelineHistoryContainsRunningJobs() throws Exception {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GerritProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockServerFactory(),
+                mockGoApplicationAccessor()
+        );
+
+        Server server = mock(Server.class);
+        when(server.getPipelineStatus("pipeline")).thenReturn(new PipelineStatus(true));
+        PipelineHistory pipelineHistory = mockPipelineHistory(true);
+        when(server.getPipelineHistory("pipeline")).thenReturn(pipelineHistory);
+
+        assertThat(plugin.canSchedule(server, Option.option("pipeline")), is(false));
+    }
+
+    @Test
+    public void shouldScheduleIfNoPipelineStatusFound() throws Exception {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GerritProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockServerFactory(),
+                mockGoApplicationAccessor()
+        );
+
+        Server server = mock(Server.class);
+
+        assertThat(plugin.canSchedule(server, Option.option("pipeline")), is(true));
+    }
+
+    @Test
+    public void shouldScheduleIfNoPipelineHistoryFound() throws Exception {
+        GitFactory gitFactory = mock(GitFactory.class);
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                new GerritProvider(),
+                gitFactory,
+                gitFolderFactory,
+                mockServerFactory(),
+                mockGoApplicationAccessor()
+        );
+
+        Server server = mock(Server.class);
+        when(server.getPipelineStatus("pipeline")).thenReturn(new PipelineStatus(true));
+
+        assertThat(plugin.canSchedule(server, Option.option("pipeline")), is(true));
+    }
+
+    private PipelineHistory mockPipelineHistory(boolean isRunning) {
+        PipelineHistory pipelineHistory = mock(PipelineHistory.class);
+        when(pipelineHistory.isPipelineRunningOrScheduled()).thenReturn(isRunning);
+        return pipelineHistory;
     }
 
     private GoPluginApiRequest mockRequest() {
@@ -323,6 +433,25 @@ public class GitHubPRBuildPluginTest {
                 assertThat((String) ((Map) response.get(i)).get("message"), is(pairs.get(i).value));
             }
         }
+    }
+
+    private ServerFactory mockServerFactory() throws Exception {
+        ServerFactory serverFactory = mock(ServerFactory.class);
+        Server server = mock(Server.class);
+        PipelineStatus status = new PipelineStatus();
+        status.schedulable = true;
+        when(server.getPipelineStatus(anyString())).thenReturn(status);
+
+        when(serverFactory.getServer(any(GeneralPluginSettings.class))).thenReturn(server);
+        return serverFactory;
+    }
+
+    private GoApplicationAccessor mockApplicationAccessor() {
+        GoApplicationAccessor accessor = mock(GoApplicationAccessor.class);
+        DefaultGoApiResponse respose = new DefaultGoApiResponse(200);
+        respose.setResponseBody("{}");
+        when(accessor.submit(any(GoApiRequest.class))).thenReturn(respose);
+        return accessor;
     }
 
     private GoPluginApiRequest createGoPluginApiRequest(final String requestName, final Map request) {
