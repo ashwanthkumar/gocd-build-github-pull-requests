@@ -20,6 +20,7 @@ import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import in.ashwanthkumar.utils.collections.Lists;
+import in.ashwanthkumar.utils.func.Function;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -235,9 +236,10 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
         Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
-        GitConfig gitConfig = getGitConfig(configuration);
+        final GitConfig gitConfig = getGitConfig(configuration);
         Map<String, String> scmData = (Map<String, String>) requestBodyMap.get("scm-data");
         Map<String, String> oldBranchToRevisionMap = (Map<String, String>) fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
+        Map<String, String> lastKnownBranchToRevisionMap = (Map<String, String>) fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
 
@@ -290,16 +292,24 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 LOGGER.info(String.format("new commits: %d", newerRevisions.size()));
 
                 List<Map> revisions = new ArrayList<Map>();
-                for (String branch : newerRevisions.keySet()) {
+                for (final String branch : newerRevisions.keySet()) {
+                    String lastKnownSHA = lastKnownBranchToRevisionMap.get(branch);
                     String latestSHA = newerRevisions.get(branch);
-                    Revision revision = git.getDetailsForRevision(latestSHA);
-                    // patch for building merge commits
-                    if (revision.isMergeCommit() && ListUtil.isEmpty(revision.getModifiedFiles())) {
-                        revision.setModifiedFiles(Lists.of(new ModifiedFile("/dev/null", "deleted")));
+                    if(StringUtils.isNotEmpty(lastKnownSHA)) {
+                        git.resetHard(latestSHA);
+                        List<Revision> allRevisionsSince = git.getRevisionsSince(lastKnownSHA);
+                        List<Map<String, Object>> changesSinceLastCommit = Lists.map(allRevisionsSince, new Function<Revision, Map<String, Object>>() {
+                            @Override
+                            public Map<String, Object> apply(Revision revision) {
+                                return getRevisionMap(gitConfig, branch, revision);
+                            }
+                        });
+                        revisions.addAll(changesSinceLastCommit);
+                    } else {
+                        Revision revision = git.getDetailsForRevision(latestSHA);
+                        Map<String, Object> revisionMap = getRevisionMapForSHA(gitConfig, branch, revision);
+                        revisions.add(revisionMap);
                     }
-
-                    Map<String, Object> revisionMap = getRevisionMap(gitConfig, branch, revision);
-                    revisions.add(revisionMap);
                 }
                 Map<String, Object> response = new HashMap<String, Object>();
                 response.put("revisions", revisions);
@@ -317,6 +327,15 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             LOGGER.warn("get latest revisions since: ", t);
             return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
         }
+    }
+
+    private Map<String, Object> getRevisionMapForSHA(GitConfig gitConfig, String branch, Revision revision) {
+        // patch for building merge commits
+        if (revision.isMergeCommit() && ListUtil.isEmpty(revision.getModifiedFiles())) {
+            revision.setModifiedFiles(Lists.of(new ModifiedFile("/dev/null", "deleted")));
+        }
+
+        return getRevisionMap(gitConfig, branch, revision);
     }
 
     private boolean branchHasNewChange(String previousSHA, String latestSHA) {
