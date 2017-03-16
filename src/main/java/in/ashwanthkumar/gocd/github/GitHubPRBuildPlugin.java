@@ -220,12 +220,13 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             Revision revision = git.getLatestRevision();
 
             Map<String, Object> response = new HashMap<String, Object>();
-            Map<String, Object> revisionMap = getRevisionMap(gitConfig, "master", revision);
+            String defaultBranch = (StringUtils.isEmpty(gitConfig.getBranch())) ? "master" : gitConfig.getBranch();
+            Map<String, Object> revisionMap = getRevisionMap(gitConfig, defaultBranch, revision);
             response.put("revision", revisionMap);
             Map<String, String> scmDataMap = new HashMap<String, String>();
             scmDataMap.put(BRANCH_TO_REVISION_MAP, JSONUtils.toJSON(branchToRevisionMap));
             response.put("scm-data", scmDataMap);
-            LOGGER.info(String.format("Triggered build for master with head at %s", revision.getRevision()));
+            LOGGER.info(String.format("Triggered build for " + defaultBranch + " with head at %s", revision.getRevision()));
             return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } catch (Throwable t) {
             LOGGER.warn("get latest revision: ", t);
