@@ -50,12 +50,12 @@ These plugins require GoCD version v15.x or above.
 ![Delete old material pop-up][11]
 
 ## Behavior
-- First run of the new pipeline will be off of 'master' branch. This creates base PR-Revision map. It also serves as sanity check for newly created pipeline.
+- First run of the new pipeline will be off of the 'Default Branch' configured in the Material. This creates base PR-Revision map. It also serves as sanity check for newly created pipeline.
 
-- From then on, any new change (new PR create / new commits to existing PR) will trigger the new pipeline. Only the top commit in the PR will show up in build cause.
+- From then on, any new change (new PR create / new commits to existing PR) will trigger the new pipeline.
 ![New pipeine schedule][12]
 
-- PR details (id, author etc.) will be available as environement variable for tasks to consume.
+- PR details (id, author etc.) will be available as environment variables for tasks to consume.
 
 - Build status notifier plugin will update Pull Request with build status
 ![On successful run of new pipeline][13]
