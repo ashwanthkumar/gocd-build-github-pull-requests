@@ -82,6 +82,20 @@ oauth=thisaintatoken
 # ignore this field or have the value to https://api.github.com
 endpoint=http://code.yourcompany.com/api/v3
 ```
+**Environment Variables**
+
+When working with Github PR material, we also make available the following list of environment variables in the pipeline.
+
+| Environment Variable | Description |
+| --- | --- |
+| PR_BRANCH | Pull Request was submitted **from** this branch. Eg. `feature-1` |
+| TARGET_BRANCH | Pull Request was submitted **for** this branch. Eg. `master` |
+| PR_URL | Pull Request URL on the Github |
+| PR_AUTHOR | Name of the user who submitted the Pull Request |
+| PR_AUTHOR_EMAIL | Email address of the author who submitted the Pull Request. **Note**: This is subject to availability on their Github profile.|
+| PR_DESCRIPTION | Description of the Pull Request |
+| PR_TITLE | Title of the Pull Request |
+
 
 ### Stash
 **Authentication**
