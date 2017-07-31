@@ -18,10 +18,7 @@ import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -32,8 +29,10 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
+import static org.hamcrest.CoreMatchers.containsString;
 
 
 public class GitHubPRBuildPluginTest {
@@ -128,6 +127,23 @@ public class GitHubPRBuildPluginTest {
 
         assertThat(prId.getValue(), is("master"));
         assertThat(revision.getValue().getRevision(), is("a683e0a27e66e710126f7697337efca052396a32"));
+    }
+
+    @Test
+    public void shouldMaskPasswordBeforeReturningTheErrorMessage() {
+        GitHubProvider provider = mock(GitHubProvider.class);
+        GitHubPRBuildPlugin gitHubPRBuildPlugin = new GitHubPRBuildPlugin();
+        gitHubPRBuildPlugin.setProvider(provider);
+
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}, username: {value: \"foo\"}, password: {value: \"secret\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+        when(provider.getRefSpec()).thenThrow(new RuntimeException("This is an error message with foo and secret"));
+
+        GoPluginApiResponse response = gitHubPRBuildPlugin.handleGetLatestRevision(request);
+
+        assertThat(response.responseBody(), containsString("****"));
+        assertFalse(response.responseBody().contains("secret"));
+        assertFalse(response.responseBody().contains("foo"));
     }
 
     @Ignore

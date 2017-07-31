@@ -230,8 +230,14 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             return renderJSON(SUCCESS_RESPONSE_CODE, response);
         } catch (Throwable t) {
             LOGGER.warn("get latest revision: ", t);
-            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
+            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, removeUsernameAndPassword(t.getMessage(), gitConfig));
         }
+    }
+
+    private String removeUsernameAndPassword(String message, GitConfig gitConfig) {
+
+        String messageForDisplay = message.replaceAll(gitConfig.getPassword(), "****");
+        return messageForDisplay.replaceAll(gitConfig.getUsername(), "****");
     }
 
     GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
@@ -326,7 +332,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             }
         } catch (Throwable t) {
             LOGGER.warn("get latest revisions since: ", t);
-            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, t.getMessage());
+            return renderJSON(INTERNAL_ERROR_RESPONSE_CODE, removeUsernameAndPassword(t.getMessage(), gitConfig));
         }
     }
 
