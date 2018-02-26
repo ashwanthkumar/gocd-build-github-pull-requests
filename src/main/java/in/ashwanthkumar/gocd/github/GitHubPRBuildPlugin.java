@@ -235,9 +235,16 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private String removeUsernameAndPassword(String message, GitConfig gitConfig) {
-
-        String messageForDisplay = message.replaceAll(gitConfig.getPassword(), "****");
-        return messageForDisplay.replaceAll(gitConfig.getUsername(), "****");
+        String messageForDisplay = message;
+        String password = gitConfig.getPassword();
+        if (StringUtils.isNotBlank(password)) {
+            messageForDisplay = message.replaceAll(password, "****");
+        }
+        String username = gitConfig.getUsername();
+        if (StringUtils.isNotBlank(username)) {
+            messageForDisplay = messageForDisplay.replaceAll(username, "****");
+        }
+        return messageForDisplay;
     }
 
     GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
