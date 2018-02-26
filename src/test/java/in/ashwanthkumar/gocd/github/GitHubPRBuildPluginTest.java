@@ -31,6 +31,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -144,6 +145,22 @@ public class GitHubPRBuildPluginTest {
         assertThat(response.responseBody(), containsString("****"));
         assertFalse(response.responseBody().contains("secret"));
         assertFalse(response.responseBody().contains("foo"));
+    }
+
+    @Test
+    public void shouldMaskUsernameAndPasswordInErrorMessageIfExists() {
+        GitHubProvider provider = mock(GitHubProvider.class);
+        GitHubPRBuildPlugin gitHubPRBuildPlugin = new GitHubPRBuildPlugin();
+        gitHubPRBuildPlugin.setProvider(provider);
+
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}, username: {value: \"\"}, password: {value: \"\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+        when(provider.getRefSpec()).thenThrow(new RuntimeException("Error message with nothing to replace."));
+
+        GoPluginApiResponse response = gitHubPRBuildPlugin.handleGetLatestRevision(request);
+
+        assertFalse(response.responseBody().contains("****"));
+        assertTrue(response.responseBody().equals("\"Error message with nothing to replace.\""));
     }
 
     @Ignore
