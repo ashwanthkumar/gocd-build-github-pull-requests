@@ -1,4 +1,3 @@
-[![Build Status](https://snap-ci.com/ashwanthkumar/gocd-build-github-pull-requests/branch/master/build_image)](https://snap-ci.com/ashwanthkumar/gocd-build-github-pull-requests/branch/master)
 [![Build Status](https://travis-ci.org/ashwanthkumar/gocd-build-github-pull-requests.svg?branch=master)](https://travis-ci.org/ashwanthkumar/gocd-build-github-pull-requests)
 
 # GoCD - Git feature branch support
