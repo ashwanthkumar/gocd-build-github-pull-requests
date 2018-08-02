@@ -311,7 +311,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                     String latestSHA = newerRevisions.get(branch);
                     if(StringUtils.isNotEmpty(lastKnownSHA)) {
                         git.resetHard(latestSHA);
-                        List<Revision> allRevisionsSince = git.getRevisionsSince(lastKnownSHA);
+                        List<Revision> allRevisionsSince;
+                        try {
+                            allRevisionsSince = git.getRevisionsSince(lastKnownSHA);
+                        } catch (Exception e) {
+                            allRevisionsSince = Collections.singletonList(git.getLatestRevision());
+                        }
                         List<Map<String, Object>> changesSinceLastCommit = Lists.map(allRevisionsSince, new Function<Revision, Map<String, Object>>() {
                             @Override
                             public Map<String, Object> apply(Revision revision) {
