@@ -391,7 +391,9 @@ public class GitHubPRBuildPlugin implements GoPlugin {
                 configuration.get("url"),
                 configuration.get("username"),
                 configuration.get("password"),
-                StringUtils.trimToNull(configuration.get("defaultBranch")));
+                StringUtils.trimToNull(configuration.get("defaultBranch")),
+                true,
+                Boolean.parseBoolean(configuration.get("shallowClone")));
         provider.addConfigData(gitConfig);
         return gitConfig;
     }

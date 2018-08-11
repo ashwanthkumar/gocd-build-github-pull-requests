@@ -23,13 +23,13 @@ public class StashProviderTest extends AbstractProviderTest {
         PluginConfigurationView scmConfigurationView = getScmView();
 
         assertThat(scmConfigurationView.fields().keySet(),
-                   hasItems("url", "username", "password", "defaultBranch")
+                   hasItems("url", "username", "password", "defaultBranch", "shallowClone")
         );
-        assertThat(scmConfigurationView.fields().size(), is(4));
+        assertThat(scmConfigurationView.fields().size(), is(5));
     }
 
     @Test
-    public void shouldReturnCorrectGeneralSettingsTemplate() throws Exception {
+    public void  shouldReturnCorrectGeneralSettingsTemplate() throws Exception {
         PluginConfigurationView generalConfigurationView = getGeneralView();
 
         assertThat(generalConfigurationView.templateName(), is(""));
