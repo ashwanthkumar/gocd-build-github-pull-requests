@@ -23,9 +23,9 @@ public class GitProviderTest extends AbstractProviderTest {
         PluginConfigurationView scmConfigurationView = getScmView();
 
         assertThat(scmConfigurationView.fields().keySet(),
-                   hasItems("url", "username", "password", "branchwhitelist", "branchblacklist", "defaultBranch")
+                   hasItems("url", "username", "password", "branchwhitelist", "branchblacklist", "defaultBranch", "shallowClone")
         );
-        assertThat(scmConfigurationView.fields().size(), is(6));
+        assertThat(scmConfigurationView.fields().size(), is(7));
     }
 
     @Test

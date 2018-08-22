@@ -73,6 +73,7 @@ public class GitHubPRBuildPluginTest {
         configuration.put("url", "url");
         configuration.put("username", "config-username");
         configuration.put("password", "config-password");
+        configuration.put("shallowClone", "true");
 
         GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin();
         plugin.setProvider(new GitHubProvider());
@@ -81,15 +82,18 @@ public class GitHubPRBuildPluginTest {
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is("config-username"));
         assertThat(gitConfig.getPassword(), is("config-password"));
+        assertThat(gitConfig.isShallowClone(), is(true));
 
         configuration.remove("username");
         configuration.remove("password");
+        configuration.remove("shallowClone");
 
         gitConfig = plugin.getGitConfig(configuration);
 
         assertThat(gitConfig.getUrl(), is("url"));
         assertThat(gitConfig.getUsername(), is(usernameProperty));
         assertThat(gitConfig.getPassword(), is(passwordProperty));
+        assertThat(gitConfig.isShallowClone(), is(false));
     }
 
     @Ignore("url validation is turned off")
