@@ -5,12 +5,12 @@
 </div>
 <div class="form_item_block">
     <label>Username:</label>
-    <input type="text" ng-model="username" ng-required="false"/>
+    <input type="text" autocomplete="new-password" ng-model="username" ng-required="false"/>
     <span class="form_error" ng-show="GOINPUTNAME[username].$error.server">{{ GOINPUTNAME[username].$error.server }}</span>
 </div>
 <div class="form_item_block">
     <label>Password:</label>
-    <input type="password" ng-model="password" ng-required="false"/>
+    <input type="password" autocomplete="new-password" ng-model="password" ng-required="false"/>
     <span class="form_error" ng-show="GOINPUTNAME[password].$error.server">{{ GOINPUTNAME[password].$error.server }}</span>
 </div>
 <div class="form_item_block">
