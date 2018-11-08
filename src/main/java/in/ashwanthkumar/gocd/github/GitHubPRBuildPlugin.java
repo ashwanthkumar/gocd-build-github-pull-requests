@@ -218,6 +218,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             git.cloneOrFetch(provider.getRefSpec());
             Map<String, String> branchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
             Revision revision = git.getLatestRevision();
+            git.submoduleUpdate();
 
             Map<String, Object> response = new HashMap<String, Object>();
             String defaultBranch = (StringUtils.isEmpty(gitConfig.getBranch())) ? "master" : gitConfig.getBranch();
@@ -261,6 +262,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             GitHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(flyweightFolder));
             git.cloneOrFetch(provider.getRefSpec());
             Map<String, String> newBranchToRevisionMap = git.getBranchToRevisionMap(provider.getRefPattern());
+            git.submoduleUpdate();
 
             if (newBranchToRevisionMap.isEmpty()) {
                 LOGGER.debug("No active PRs found.");
@@ -374,6 +376,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
             GitHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(destinationFolder));
             git.cloneOrFetch(provider.getRefSpec());
             git.resetHard(revision);
+            git.submoduleUpdate();
 
             Map<String, Object> response = new HashMap<String, Object>();
             response.put("status", "success");
