@@ -3,7 +3,7 @@
 # GoCD - Git feature branch support
 This is a GoCD SCM plugin for Git feature branch support. [Discussion Thread](https://groups.google.com/d/topic/go-cd-dev/Rt_Y5G2VkOc/discussion)
 
-Supported (as seperate plugins):
+Supported (as separate plugins):
 * Git repository for branches
 * Github repository for Pull Requests
 * Stash repository for Pull Requests

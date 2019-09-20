@@ -408,9 +408,9 @@ public class GitHubPRBuildPluginTest {
 
     private GoApplicationAccessor mockGoApplicationAccessor() {
         GoApplicationAccessor accessor = mock(GoApplicationAccessor.class);
-        DefaultGoApiResponse respose = new DefaultGoApiResponse(200);
-        respose.setResponseBody("{}");
-        when(accessor.submit(any(GoApiRequest.class))).thenReturn(respose);
+        DefaultGoApiResponse response = new DefaultGoApiResponse(200);
+        response.setResponseBody("{}");
+        when(accessor.submit(any(GoApiRequest.class))).thenReturn(response);
         return accessor;
     }
 }
