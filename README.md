@@ -85,16 +85,20 @@ endpoint=http://code.yourcompany.com/api/v3
 
 When working with Github PR material, we also make available the following list of environment variables in the pipeline.
 
+Note: Their name will vary depending on your material's name. For example, if you name it `my-material`, they will be available under `GO_SCM_MY_MATERIAL_*` prefix.
+
+##### Troubleshooting: Those variables will be seen only if you have managed to setup GH authentication correctly. See [this comment](https://github.com/ashwanthkumar/gocd-build-github-pull-requests/issues/105#issuecomment-428812031) for more info. (Otherwise, you might end up with a situation in which the PR pipeline is triggered, but is missing the env variables.)
+
 | Environment Variable | Description |
 | --- | --- |
-| PR_BRANCH | Pull Request was submitted **from** this branch. Eg. `feature-1` |
-| TARGET_BRANCH | Pull Request was submitted **for** this branch. Eg. `master` |
-| PR_URL | Pull Request URL on the Github |
-| PR_AUTHOR | Name of the user who submitted the Pull Request |
-| PR_AUTHOR_EMAIL | Email address of the author who submitted the Pull Request. **Note**: This is subject to availability on their Github profile.|
-| PR_DESCRIPTION | Description of the Pull Request |
-| PR_TITLE | Title of the Pull Request |
-
+| `GO_SCM_*_PR_BRANCH` | Pull Request was submitted **from** this organisation/user and branch. Eg. `ashwankthkumar:feature-1` |
+| `GO_SCM_*_TARGET_BRANCH` | Pull Request was submitted **for** this organisation/user and branch. Eg. `ashwankthkumar:master` |
+| `GO_SCM_*_PR_ID` | Pull Request ID on the Github |
+| `GO_SCM_*_PR_URL` | Pull Request URL on the Github |
+| `GO_SCM_*_PR_AUTHOR_EMAIL` | Email address of the author who submitted the Pull Request. 
+**Note**: This is subject to availability on their Github profile. |
+| `GO_SCM_*_PR_TITLE` | Title of the Pull Request |
+| `GO_SCM_*_PR_DESCRIPTION` | Description of the Pull Request |
 
 ### Stash
 **Authentication**
