@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<go-plugin id="gitlab.pr" version="1">
+    <about>
+        <name>Gitlab Pull Requests Builder</name>
+        <version>${version}</version>
+        <target-go-version>15.1.0</target-go-version>
+        <description>Plugin that polls a Gitlab repository for merge requests and triggers a build for each of them</description>
+        <vendor>
+            <name>Ashwanth Kumar</name>
+            <url>https://github.com/ashwanthkumar/gocd-build-github-pull-requests</url>
+        </vendor>
+    </about>
+</go-plugin>

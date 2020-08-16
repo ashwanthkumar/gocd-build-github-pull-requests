@@ -40,6 +40,11 @@
             <artifactId>github-api</artifactId>
             <version>1.68</version>
         </dependency>
+        <dependency>
+            <groupId>org.gitlab4j</groupId>
+            <artifactId>gitlab4j-api</artifactId>
+            <version>4.15.6</version>
+        </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
@@ -83,6 +88,16 @@
             <properties>
                 <plugin.name>github-pr-poller</plugin.name>
                 <resource.directory>src/main/resources/github</resource.directory>
+            </properties>
+        </profile>
+        <profile>
+            <id>gitlab.pr</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <plugin.name>gitlab-pr-poller</plugin.name>
+                <resource.directory>src/main/resources/gitlab</resource.directory>
             </properties>
         </profile>
         <profile>
