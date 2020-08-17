@@ -84,8 +84,9 @@ public class GitLabProvider implements Provider {
 
         PullRequestStatus prStatus = null;
         boolean isDisabled = System.getProperty("go.plugin.gitlab.pr.populate-details", "Y").equals("N");
-        LOG.debug("Populating PR details is disabled");
-        if (!isDisabled) {
+        if(isDisabled) {
+            LOG.debug("Populating PR details is disabled");
+        } else {
             prStatus = getPullRequestStatus(gitConfig, prId, prSHA);
         }
 
