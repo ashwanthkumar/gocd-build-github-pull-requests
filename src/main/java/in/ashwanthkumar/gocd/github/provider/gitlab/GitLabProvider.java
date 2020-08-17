@@ -113,7 +113,7 @@ public class GitLabProvider implements Provider {
     private PullRequestStatus getPullRequestStatus(GitConfig gitConfig, String prId, String prSHA) {
         try {
             MergeRequest currentPR = pullRequestFrom(gitConfig, Integer.parseInt(prId));
-            return transformGHPullRequestToPullRequestStatus(prSHA).apply(currentPR);
+            return transformMergeRequestToPullRequestStatus(prSHA).apply(currentPR);
         } catch (Exception e) {
             // ignore
             LOG.warn(e.getMessage(), e);
@@ -127,7 +127,7 @@ public class GitLabProvider implements Provider {
                 .getMergeRequest(GitLabUtils.parseGitlabUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
     }
 
-    private Function<MergeRequest, PullRequestStatus> transformGHPullRequestToPullRequestStatus(final String mergedSHA) {
+    private Function<MergeRequest, PullRequestStatus> transformMergeRequestToPullRequestStatus(final String mergedSHA) {
         return new Function<MergeRequest, PullRequestStatus>() {
             @Override
             public PullRequestStatus apply(MergeRequest input) {
