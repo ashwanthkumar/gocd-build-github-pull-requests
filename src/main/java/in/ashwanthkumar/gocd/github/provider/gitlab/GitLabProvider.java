@@ -4,6 +4,7 @@ import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
+import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
 import in.ashwanthkumar.gocd.github.settings.general.DefaultGeneralPluginConfigurationView;
 import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginConfigurationView;
@@ -29,6 +30,8 @@ public class GitLabProvider implements Provider {
     private static final Logger LOG = LoggerFactory.getLogger(GitLabProvider.class);
     public static final String REF_SPEC = "+refs/merge-requests/*/head:refs/remotes/origin/merge-requests/*";
     public static final String REF_PATTERN = "refs/remotes/origin/merge-requests/";
+    private static String LOGIN = "login";
+    private static String PASSWORD = "password";
 
     @Override
     public GoPluginIdentifier getPluginId() {
@@ -45,9 +48,10 @@ public class GitLabProvider implements Provider {
         try {
             Properties props = GitLabUtils.readPropertyFile();
             if (StringUtil.isEmpty(gitConfig.getUsername())) {
-                gitConfig.setUsername(props.getProperty("login"));
-            } if (StringUtil.isEmpty(gitConfig.getPassword())) {
-                gitConfig.setPassword(props.getProperty("password"));
+                gitConfig.setUsername(props.getProperty(LOGIN));
+            }
+            if (StringUtil.isEmpty(gitConfig.getPassword())) {
+                gitConfig.setPassword(props.getProperty(PASSWORD));
             }
         } catch (IOException e) {
             // ignore
@@ -84,7 +88,7 @@ public class GitLabProvider implements Provider {
 
         PullRequestStatus prStatus = null;
         boolean isDisabled = System.getProperty("go.plugin.gitlab.pr.populate-details", "Y").equals("N");
-        if(isDisabled) {
+        if (isDisabled) {
             LOG.debug("Populating PR details is disabled");
         } else {
             prStatus = getPullRequestStatus(gitConfig, prId, prSHA);
@@ -123,9 +127,7 @@ public class GitLabProvider implements Provider {
 
     private MergeRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws GitLabApiException,
             NullPointerException {
-        return Objects.requireNonNull(loginWith(gitConfig))
-                .getMergeRequestApi()
-                .getMergeRequest(GitLabUtils.parseGitlabUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
+        return Objects.requireNonNull(loginWith(gitConfig)).getMergeRequestApi().getMergeRequest(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
     }
 
     private Function<MergeRequest, PullRequestStatus> transformMergeRequestToPullRequestStatus(final String mergedSHA) {
@@ -145,8 +147,7 @@ public class GitLabProvider implements Provider {
         if (hasCredentials(gitConfig))
             return GitLabApi.oauth2Login(gitConfig.getUrl(), gitConfig.getUsername(), gitConfig.getPassword());
         else {
-            LOG.warn("No gitlab credentials found!");
-            return null;
+            LOG.warn("No gitlab credentials found!"); return null;
         }
     }
 
