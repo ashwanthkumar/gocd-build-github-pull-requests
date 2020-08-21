@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 
 public class GitLabProvider implements Provider {
@@ -66,7 +65,7 @@ public class GitLabProvider implements Provider {
     @Override
     public void checkConnection(GitConfig gitConfig) {
         try {
-            Objects.requireNonNull(loginWith(gitConfig)).getProjectApi().getProjects();
+            loginWith(gitConfig).getProjectApi().getProjects();
         } catch (Exception e) {
             throw new RuntimeException(String.format("check connection failed. %s", e.getMessage()), e);
         }
@@ -125,9 +124,10 @@ public class GitLabProvider implements Provider {
         } return null;
     }
 
-    private MergeRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws GitLabApiException,
-            NullPointerException {
-        return Objects.requireNonNull(loginWith(gitConfig)).getMergeRequestApi().getMergeRequest(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
+    private MergeRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws GitLabApiException {
+        return loginWith(gitConfig)
+                .getMergeRequestApi()
+                .getMergeRequest(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
     }
 
     private Function<MergeRequest, PullRequestStatus> transformMergeRequestToPullRequestStatus(final String mergedSHA) {
@@ -143,11 +143,12 @@ public class GitLabProvider implements Provider {
         };
     }
 
-    private GitLabApi loginWith(GitConfig gitConfig) throws GitLabApiException {
+    private GitLabApi loginWith(GitConfig gitConfig) throws GitLabApiException, RuntimeException {
         if (hasCredentials(gitConfig))
             return GitLabApi.oauth2Login(gitConfig.getUrl(), gitConfig.getUsername(), gitConfig.getPassword());
         else {
-            LOG.warn("No gitlab credentials found!"); return null;
+            LOG.warn("No gitlab credentials found!");
+            throw new RuntimeException("No gitlab credentials found");
         }
     }
 
