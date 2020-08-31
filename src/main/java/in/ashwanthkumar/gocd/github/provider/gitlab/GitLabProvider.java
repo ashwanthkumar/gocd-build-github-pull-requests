@@ -20,7 +20,6 @@ import org.gitlab4j.api.models.MergeRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
@@ -30,7 +29,7 @@ public class GitLabProvider implements Provider {
     public static final String REF_SPEC = "+refs/merge-requests/*/head:refs/remotes/origin/merge-requests/*";
     public static final String REF_PATTERN = "refs/remotes/origin/merge-requests/";
     private static String LOGIN = "login";
-    private static String PASSWORD = "password";
+    private static String ACCESS_TOKEN = "accessToken";
 
     @Override
     public GoPluginIdentifier getPluginId() {
@@ -50,10 +49,10 @@ public class GitLabProvider implements Provider {
                 gitConfig.setUsername(props.getProperty(LOGIN));
             }
             if (StringUtil.isEmpty(gitConfig.getPassword())) {
-                gitConfig.setPassword(props.getProperty(PASSWORD));
+                gitConfig.setPassword(props.getProperty(ACCESS_TOKEN));
             }
-        } catch (IOException e) {
-            // ignore
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Adding config data failed. %s", e.getMessage()), e);
         }
     }
 
@@ -65,7 +64,7 @@ public class GitLabProvider implements Provider {
     @Override
     public void checkConnection(GitConfig gitConfig) {
         try {
-            loginWith(gitConfig).getProjectApi().getProjects();
+            loginWith(gitConfig).getProjectApi().getProject(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()));
         } catch (Exception e) {
             throw new RuntimeException(String.format("check connection failed. %s", e.getMessage()), e);
         }
@@ -121,7 +120,8 @@ public class GitLabProvider implements Provider {
         } catch (Exception e) {
             // ignore
             LOG.warn(e.getMessage(), e);
-        } return null;
+            throw new RuntimeException(String.format("Failed to fetch PR status. %s", e.getMessage()), e);
+        }
     }
 
     private MergeRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws GitLabApiException {
@@ -143,9 +143,10 @@ public class GitLabProvider implements Provider {
         };
     }
 
-    private GitLabApi loginWith(GitConfig gitConfig) throws GitLabApiException, RuntimeException {
+    private GitLabApi loginWith(GitConfig gitConfig) throws RuntimeException {
         if (hasCredentials(gitConfig))
-            return GitLabApi.oauth2Login(gitConfig.getUrl(), gitConfig.getUsername(), gitConfig.getPassword());
+            return new GitLabApi(GitLabUtils.getServerUrl(gitConfig.getEffectiveUrl()),
+                    gitConfig.getPassword());
         else {
             LOG.warn("No gitlab credentials found!");
             throw new RuntimeException("No gitlab credentials found");
