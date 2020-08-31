@@ -52,7 +52,8 @@ public class GitLabProvider implements Provider {
                 gitConfig.setPassword(props.getProperty(ACCESS_TOKEN));
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.format("Adding config data failed. %s", e.getMessage()), e);
+            LOG.error(String.format("Failed to add config data. %s", e.getMessage()), e);
+            throw new RuntimeException(String.format("Failed to add config data. %s", e.getMessage()), e);
         }
     }
 
@@ -66,7 +67,8 @@ public class GitLabProvider implements Provider {
         try {
             loginWith(gitConfig).getProjectApi().getProject(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()));
         } catch (Exception e) {
-            throw new RuntimeException(String.format("check connection failed. %s", e.getMessage()), e);
+            LOG.error(String.format("Check connection failed. %s", e.getMessage()), e);
+            throw new RuntimeException(String.format("Check connection failed. %s", e.getMessage()), e);
         }
     }
 
@@ -118,8 +120,7 @@ public class GitLabProvider implements Provider {
             MergeRequest currentPR = pullRequestFrom(gitConfig, Integer.parseInt(prId));
             return transformMergeRequestToPullRequestStatus(prSHA).apply(currentPR);
         } catch (Exception e) {
-            // ignore
-            LOG.warn(e.getMessage(), e);
+            LOG.error(String.format("Failed to fetch PR status. %s", e.getMessage()), e);
             throw new RuntimeException(String.format("Failed to fetch PR status. %s", e.getMessage()), e);
         }
     }
@@ -148,7 +149,7 @@ public class GitLabProvider implements Provider {
             return new GitLabApi(GitLabUtils.getServerUrl(gitConfig.getEffectiveUrl()),
                     gitConfig.getPassword());
         else {
-            LOG.warn("No gitlab credentials found!");
+            LOG.error("No gitlab credentials found");
             throw new RuntimeException("No gitlab credentials found");
         }
     }
