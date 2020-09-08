@@ -8,6 +8,9 @@ cd ../gocd-build-github-pull-requests
 mvn clean install -DskipTests -P github.pr
 cp target/github-pr-poller*.jar dist/
 
+mvn clean install -DskipTests -P gitlab.pr
+cp target/gitlab-pr-poller*.jar dist/
+
 mvn clean install -DskipTests -P git.fb
 cp target/git-fb-poller*.jar dist/
 

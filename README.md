@@ -6,6 +6,7 @@ This is a GoCD SCM plugin for Git feature branch support. [Discussion Thread](ht
 Supported (as separate plugins):
 * Git repository for branches
 * Github repository for Pull Requests
+* Gitlab repository for Merge Requests
 * Stash repository for Pull Requests
 * Gerrit repository for Change Sets
 
@@ -99,6 +100,16 @@ Note: Their name will vary depending on your material's name. For example, if yo
 **Note**: This is subject to availability on their Github profile. |
 | `GO_SCM_*_PR_TITLE` | Title of the Pull Request |
 | `GO_SCM_*_PR_DESCRIPTION` | Description of the Pull Request |
+
+### Gitlab / Gitlab Enterprise
+
+**Authentication:**
+- You can create a file `~/.gitlab` with the following contents: (Note: `~/.gitlab` needs to be available on Go Server)
+```
+login=johndoe
+accessToken=personalaccesstoken
+```
+Please refer [this link](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#creating-a-personal-access-token) for more details on how to create a personal access token.
 
 ### Stash
 **Authentication**

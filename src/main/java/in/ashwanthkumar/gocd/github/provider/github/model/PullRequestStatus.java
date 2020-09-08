@@ -32,6 +32,21 @@ public class PullRequestStatus {
         this.title = title;
     }
 
+    public PullRequestStatus(int id, String mergeRefPattern, String lastHead, String mergedSHA, String prBranch,
+                             String toBranch, String url, String author, String authorEmail, String description, String title) {
+        this.id = id;
+        this.mergeRef = String.format("%s%d", mergeRefPattern, getId());
+        this.lastHead = lastHead;
+        this.mergeSHA = mergedSHA;
+        this.prBranch = prBranch;
+        this.toBranch = toBranch;
+        this.url = url;
+        this.author = author;
+        this.authorEmail = authorEmail;
+        this.description = description;
+        this.title = title;
+    }
+
     private PullRequestStatus() {
     }
 
