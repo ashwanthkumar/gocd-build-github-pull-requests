@@ -120,9 +120,10 @@ public class GitLabProvider implements Provider {
             MergeRequest currentPR = pullRequestFrom(gitConfig, Integer.parseInt(prId));
             return transformMergeRequestToPullRequestStatus(prSHA).apply(currentPR);
         } catch (Exception e) {
+            // ignore
             LOG.error(String.format("Failed to fetch PR status. %s", e.getMessage()), e);
-            throw new RuntimeException(String.format("Failed to fetch PR status. %s", e.getMessage()), e);
         }
+        return null;
     }
 
     private MergeRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws GitLabApiException {
