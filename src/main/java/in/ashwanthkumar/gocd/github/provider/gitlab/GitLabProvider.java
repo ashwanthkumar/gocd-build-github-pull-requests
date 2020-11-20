@@ -4,7 +4,6 @@ import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
-import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
 import in.ashwanthkumar.gocd.github.settings.general.DefaultGeneralPluginConfigurationView;
 import in.ashwanthkumar.gocd.github.settings.general.GeneralPluginConfigurationView;
@@ -65,7 +64,7 @@ public class GitLabProvider implements Provider {
     @Override
     public void checkConnection(GitConfig gitConfig) {
         try {
-            loginWith(gitConfig).getProjectApi().getProject(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()));
+            loginWith(gitConfig).getProjectApi().getProject(GitLabUtils.getProjectPathFromUrl(gitConfig.getEffectiveUrl()));
         } catch (Exception e) {
             LOG.error(String.format("Check connection failed. %s", e.getMessage()), e);
             throw new RuntimeException(String.format("Check connection failed. %s", e.getMessage()), e);
@@ -129,7 +128,7 @@ public class GitLabProvider implements Provider {
     private MergeRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws GitLabApiException {
         return loginWith(gitConfig)
                 .getMergeRequestApi()
-                .getMergeRequest(GHUtils.parseGithubUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
+                .getMergeRequest(GitLabUtils.getProjectPathFromUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
     }
 
     private Function<MergeRequest, PullRequestStatus> transformMergeRequestToPullRequestStatus(final String mergedSHA) {
