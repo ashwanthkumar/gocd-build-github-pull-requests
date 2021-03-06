@@ -1,6 +1,8 @@
 package in.ashwanthkumar.gocd.github;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.thoughtworks.go.plugin.api.GoApplicationAccessor;
 import com.thoughtworks.go.plugin.api.request.GoApiRequest;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
@@ -10,6 +12,7 @@ import com.tw.go.plugin.GitHelper;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
+import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.provider.gerrit.GerritProvider;
 import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
@@ -29,9 +32,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -282,6 +283,78 @@ public class GitHubPRBuildPluginTest {
         assertThat(response.responseCode(), is(200));
     }
 
+    @Test
+    public void shouldSetCheckoutBranchToSourceBranch() {
+        GitFactory gitFactory = mock(GitFactory.class);
+        mockGitHelperToReturnBranch(gitFactory, "master");
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        Provider provider = new TestProvider().withRevisionData("PR_BRANCH", "dummy_owner:dummy_source_branch");
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                provider,
+                gitFactory,
+                gitFolderFactory,
+                mockGoApplicationAccessor()
+        );
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+
+        GoPluginApiResponse response = pluginSpy.handleGetLatestRevision(request);
+        Map<String, Map<String, Map<String, String>>> responseBody =
+                (Map<String, Map<String, Map<String, String>>>) JSONUtils.fromJSON(response.responseBody());
+        String checkoutBranch = responseBody.get("revision").get("data").get("PR_CHECKOUT_BRANCH");
+        assertEquals("dummy_owner/dummy_source_branch", checkoutBranch);
+    }
+
+    @Test
+    public void shouldSetCheckoutBranchToDefaultWithPrId() {
+        GitFactory gitFactory = mock(GitFactory.class);
+        mockGitHelperToReturnBranch(gitFactory, "master");
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        Provider provider = new TestProvider().withRevisionData("PR_ID", "7");
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                provider,
+                gitFactory,
+                gitFolderFactory,
+                mockGoApplicationAccessor()
+        );
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+
+        GoPluginApiResponse response = pluginSpy.handleGetLatestRevision(request);
+        Map<String, Map<String, Map<String, String>>> responseBody =
+                (Map<String, Map<String, Map<String, String>>>) JSONUtils.fromJSON(response.responseBody());
+        String checkoutBranch = responseBody.get("revision").get("data").get("PR_CHECKOUT_BRANCH");
+        assertEquals("gocd-pr/7", checkoutBranch);
+    }
+
+    @Test
+    public void shouldSetCheckoutBranchToDefault() {
+        GitFactory gitFactory = mock(GitFactory.class);
+        mockGitHelperToReturnBranch(gitFactory, "master");
+        GitFolderFactory gitFolderFactory = mock(GitFolderFactory.class);
+        Provider provider = new TestProvider();
+        GitHubPRBuildPlugin plugin = new GitHubPRBuildPlugin(
+                provider,
+                gitFactory,
+                gitFolderFactory,
+                mockGoApplicationAccessor()
+        );
+        GitHubPRBuildPlugin pluginSpy = spy(plugin);
+
+        GoPluginApiRequest request = mock(GoPluginApiRequest.class);
+        when(request.requestBody()).thenReturn("{scm-configuration: {url: {value: \"https://github.com/mdaliejaz/samplerepo.git\"}}, flyweight-folder: \"" + TEST_DIR + "\"}");
+
+        GoPluginApiResponse response = pluginSpy.handleGetLatestRevision(request);
+        Map<String, Map<String, Map<String, String>>> responseBody =
+                (Map<String, Map<String, Map<String, String>>>) JSONUtils.fromJSON(response.responseBody());
+        String checkoutBranch = responseBody.get("revision").get("data").get("PR_CHECKOUT_BRANCH");
+        assertEquals("gocd-pr", checkoutBranch);
+    }
+
     private GoPluginApiRequest mockRequest() {
         GoPluginApiRequest request = mock(GoPluginApiRequest.class);
         when(request.requestBody()).thenReturn("{\n" +
@@ -310,6 +383,9 @@ public class GitHubPRBuildPluginTest {
         when(helper.getBranchToRevisionMap(anyString())).thenReturn(new HashMap<String, String>() {{
             put(branch, "abcdef01234567891");
         }});
+        when(helper.getLatestRevision()).thenReturn(
+                new Revision("abcdef01234567891", new Date(), "", "", "", Collections.<ModifiedFile>emptyList())
+        );
         when(helper.getDetailsForRevision("abcdef01234567891")).thenReturn(
                 new Revision("abcdef01234567891", new Date(), "", "", "", Collections.<ModifiedFile>emptyList())
         );
@@ -412,5 +488,20 @@ public class GitHubPRBuildPluginTest {
         response.setResponseBody("{}");
         when(accessor.submit(any(GoApiRequest.class))).thenReturn(response);
         return accessor;
+    }
+
+    class TestProvider extends GitHubProvider {
+
+        private Map<String, String> revisionData = new HashMap<>();
+
+        TestProvider withRevisionData(String key, String value) {
+            revisionData.put(key, value);
+            return this;
+        }
+
+        @Override
+        public void populateRevisionData(GitConfig gitConfig, String prId, String prSHA, Map<String, String> data) {
+            data.putAll(revisionData);
+        }
     }
 }
