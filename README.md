@@ -94,6 +94,7 @@ Note: Their name will vary depending on your material's name. For example, if yo
 | --- | --- |
 | `GO_SCM_*_PR_BRANCH` | Pull Request was submitted **from** this organisation/user and branch. Eg. `ashwankthkumar:feature-1` |
 | `GO_SCM_*_TARGET_BRANCH` | Pull Request was submitted **for** this organisation/user and branch. Eg. `ashwankthkumar:master` |
+| `GO_SCM_*_PR_CHECKOUT_BRANCH` | Local branch into which the plugin checks out the Pull Request during the build. Eg. `ashwankthkumar/feature-1` |
 | `GO_SCM_*_PR_ID` | Pull Request ID on the Github |
 | `GO_SCM_*_PR_URL` | Pull Request URL on the Github |
 | `GO_SCM_*_PR_AUTHOR_EMAIL` | Email address of the author who submitted the Pull Request. 
