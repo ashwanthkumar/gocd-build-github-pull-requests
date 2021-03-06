@@ -444,16 +444,26 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         Map<String, String> customDataBag = new HashMap<String, String>();
         provider.populateRevisionData(gitConfig, branch, revision.getRevision(), customDataBag);
 
-        // Don't use "pr" because at least for Bitbucke there are already pr/ git refs.
-        // TODO: for providers that return the source branch, it should use that.
-        String checkoutBranch = "gocd-pr";
-        if (customDataBag.containsKey("PR_ID")) {
-            checkoutBranch += "/" + customDataBag.get("PR_ID");
-        }
-        customDataBag.put("PR_CHECKOUT_BRANCH", checkoutBranch);
+        customDataBag.put("PR_CHECKOUT_BRANCH", determineCheckoutBranch(customDataBag));
 
         response.put("data", customDataBag);
         return response;
+    }
+
+    private String determineCheckoutBranch(Map<String, String> customDataBag) {
+        // Use the source branch suggested by the provider, if available:
+        String checkoutBranch = customDataBag.get("PR_BRANCH");
+        if (checkoutBranch == null) {
+            // If not, use a generic name but include the PR identifier for reference, if available:
+            // Don't use "pr" as the name because at least for Bitbucket there are already pr/ git refs.
+            checkoutBranch = "gocd-pr";
+            if (customDataBag.containsKey("PR_ID")) {
+                checkoutBranch += "/" + customDataBag.get("PR_ID");
+            }
+        }
+
+        // git doesn't like colons in e.g. "owner:branch" returned by Github
+        return checkoutBranch.replace(':', '/');
     }
 
     private Map<String, String> keyValuePairs(Map<String, Object> requestBodyMap, String mainKey) {
