@@ -1,14 +1,11 @@
 package in.ashwanthkumar.gocd.github;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.thoughtworks.go.plugin.api.GoApplicationAccessor;
 import com.thoughtworks.go.plugin.api.request.GoApiRequest;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.DefaultGoApiResponse;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
-import com.tw.go.plugin.GitHelper;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
@@ -17,6 +14,7 @@ import in.ashwanthkumar.gocd.github.provider.gerrit.GerritProvider;
 import in.ashwanthkumar.gocd.github.provider.git.GitProvider;
 import in.ashwanthkumar.gocd.github.provider.github.GHUtils;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
+import in.ashwanthkumar.gocd.github.util.ExtendedGitCmdHelper;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
@@ -378,7 +376,7 @@ public class GitHubPRBuildPluginTest {
     }
 
     private void mockGitHelperToReturnBranch(GitFactory gitFactory, final String branch) {
-        GitHelper helper = mock(GitHelper.class);
+        ExtendedGitCmdHelper helper = mock(ExtendedGitCmdHelper.class);
         when(gitFactory.create(any(GitConfig.class), any(File.class))).thenReturn(helper);
         when(helper.getBranchToRevisionMap(anyString())).thenReturn(new HashMap<String, String>() {{
             put(branch, "abcdef01234567891");

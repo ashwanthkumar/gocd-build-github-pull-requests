@@ -8,9 +8,6 @@ import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 import com.tw.go.plugin.GitHelper;
-import com.tw.go.plugin.cmd.Console;
-import com.tw.go.plugin.cmd.InMemoryConsumer;
-import com.tw.go.plugin.cmd.ProcessOutputStreamConsumer;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
@@ -19,16 +16,15 @@ import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.settings.scm.PluginConfigurationView;
 import in.ashwanthkumar.gocd.github.util.BranchFilter;
+import in.ashwanthkumar.gocd.github.util.ExtendedGitCmdHelper;
 import in.ashwanthkumar.gocd.github.util.GitFactory;
 import in.ashwanthkumar.gocd.github.util.GitFolderFactory;
 import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.func.Function;
-import org.apache.commons.exec.CommandLine;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
@@ -379,17 +375,11 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         LOGGER.info(String.format("destination: %s. commit: %s", destinationFolder, revision));
 
         try {
-            File workDir = gitFolderFactory.create(destinationFolder);
-            GitHelper git = gitFactory.create(gitConfig, workDir);
+            ExtendedGitCmdHelper git = gitFactory.create(gitConfig, gitFolderFactory.create(destinationFolder));
             git.cloneOrFetch(provider.getRefSpec());
 
             String branch = customDataBag.getOrDefault("PR_CHECKOUT_BRANCH", "gocd-pr");
-            // TODO: this should be moved into the git-cmd library, or just provide an easy way to execute
-            // arbitrary git commands (without all the plumbing needed here).
-            CommandLine gitCheckout = Console.createCommand(new String[]{"checkout", "-B", branch});
-            ProcessOutputStreamConsumer stdOut = new ProcessOutputStreamConsumer(new InMemoryConsumer());
-            ProcessOutputStreamConsumer stdErr = new ProcessOutputStreamConsumer(new InMemoryConsumer());
-            Console.runOrBomb(gitCheckout, workDir, stdOut, stdErr);
+            git.checkoutNewBranch(branch);
 
             git.resetHard(revision);
             git.submoduleUpdate();
