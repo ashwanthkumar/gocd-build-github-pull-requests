@@ -160,3 +160,36 @@ blacklist pattern matches to the branch name.
 [11]: images/delete-old-material.png  "Delete Old Material"
 [12]: images/pipeline-schedule.png  "Pipeline Schedule"
 [13]: images/on-successful-pipeline-run.png  "On Successful Run"
+
+## Development
+
+Build and test:
+
+```shell
+mvn package
+```
+
+Build a specific variant:
+
+```shell
+mvn package -P <variant>
+```
+
+Where `<variant>` is one of: `github.pr, gitlab.pr, git.fb, stash.pr, gerrit.cs`.
+
+### CI
+
+All commits to any branch are built by Github Actions. See `.github/workflows` folder.
+
+### Release
+
+1. Adjust the version in the `pom.xml` and commit
+2. Create and push a `v<version>` (e.g. `v1.2.3`) tag.
+
+    ```shell
+    TAG=v1.2.3
+    git tag $TAG
+    git push origin $TAG
+    ```
+
+    Pushing the tag triggers the release stages of Github Actions. The release is automatically created and artifacts uploaded to it.
