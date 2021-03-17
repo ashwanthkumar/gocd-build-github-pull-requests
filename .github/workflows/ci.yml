@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: CI
 
 on:
   push:
@@ -21,71 +21,3 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-
-  build-release-variants:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [github.pr, gitlab.pr, git.fb, stash.pr, gerrit.cs]
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-    - name: Cache Maven packages
-      uses: actions/cache@v2
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml -DskipTests -P ${{ matrix.profile }}
-    - name: Upload artifact
-      uses: 'actions/upload-artifact@v2'
-      with:
-          name: jar ${{ matrix.profile }}
-          path: target/*-poller-*.jar
-
-  create-release:
-    runs-on: ubuntu-latest
-    needs: [build-release-variants]
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-  publish-artifacts:
-    runs-on: ubuntu-latest
-    needs: [create-release]
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [github.pr, gitlab.pr, git.fb, stash.pr, gerrit.cs]
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: jar ${{ matrix.profile }}
-      - name: Determine jar name
-        id: jar_name
-        run: echo "::set-output name=jar_name::$(ls -1 *.jar)"
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ steps.jar_name.outputs.jar_name }}
-          asset_name: ${{ steps.jar_name.outputs.jar_name }}
-          asset_content_type: application/java-archive
