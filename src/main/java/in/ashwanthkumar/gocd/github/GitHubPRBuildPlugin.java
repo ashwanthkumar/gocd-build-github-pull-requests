@@ -442,7 +442,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private String determineCheckoutBranch(Map<String, String> customDataBag) {
         // Use the source branch suggested by the provider, if available:
-        String checkoutBranch = customDataBag.get("PR_BRANCH");
+        String checkoutBranch = customDataBag.getOrDefault("PR_BRANCH", customDataBag.get("CURRENT_BRANCH"));
         if (checkoutBranch == null) {
             // If not, use a generic name but include the PR identifier for reference, if available:
             // Don't use "pr" as the name because at least for Bitbucket there are already pr/ git refs.
