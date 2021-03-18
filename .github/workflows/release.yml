@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['refs/tags/v*']
+    tags: ['v*']
 
 jobs:
   build-release-variants:
