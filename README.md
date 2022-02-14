@@ -167,13 +167,13 @@ blacklist pattern matches to the branch name.
 Build and test:
 
 ```shell
-mvn package
+./mvnw package
 ```
 
 Build a specific variant:
 
 ```shell
-mvn package -P <variant>
+./mvnw package -P <variant>
 ```
 
 Where `<variant>` is one of: `github.pr, gitlab.pr, git.fb, stash.pr, gerrit.cs`.
