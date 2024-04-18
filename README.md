@@ -23,6 +23,9 @@ These plugins require GoCD version v15.x or above.
 ## Get Started
 **Installation:**
 - Download the latest plugin jar from the [Releases](https://github.com/ashwanthkumar/gocd-build-github-pull-requests/releases) section. Place it in `<go-server-location>/plugins/external` & restart Go Server. You can find the location of the Go Server installation [here](http://www.go.cd/documentation/user/current/installation/installing_go_server.html#location-of-files-after-installation-of-go-server).
+- **One more thing to note**: The release section contains different plugins for different SCM types. 
+  Select the one which is a correct match for your desired SCM type. Choosing mismatching plugins will cause weird issues.
+![Different plugins based on SCM][14]
 
 **Usage:**
 
@@ -160,3 +163,4 @@ blacklist pattern matches to the branch name.
 [11]: images/delete-old-material.png  "Delete Old Material"
 [12]: images/pipeline-schedule.png  "Pipeline Schedule"
 [13]: images/on-successful-pipeline-run.png  "On Successful Run"
+[14]: images/scm-based-plugin.png  "SCM based different plugins"
