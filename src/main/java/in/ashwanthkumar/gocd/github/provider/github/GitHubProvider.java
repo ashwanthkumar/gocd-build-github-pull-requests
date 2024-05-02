@@ -1,8 +1,8 @@
 package in.ashwanthkumar.gocd.github.provider.github;
 
 import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
+import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.tw.go.plugin.model.GitConfig;
-import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
 import in.ashwanthkumar.gocd.github.settings.general.DefaultGeneralPluginConfigurationView;
@@ -15,8 +15,6 @@ import in.ashwanthkumar.utils.lang.StringUtils;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -24,7 +22,7 @@ import java.util.Map;
 import java.util.Properties;
 
 public class GitHubProvider implements Provider {
-    private static final Logger LOG = LoggerFactory.getLogger(GitHubProvider.class);
+    private static final Logger LOG = Logger.getLoggerFor(GitHubProvider.class);
     // public static final String PR_FETCH_REFSPEC = "+refs/pull/*/merge:refs/gh-merge/remotes/origin/*";
     // public static final String PR_MERGE_PREFIX = "refs/gh-merge/remotes/origin/";
     public static final String REF_SPEC = "+refs/pull/*/head:refs/remotes/origin/pull-request/*";
@@ -45,10 +43,10 @@ public class GitHubProvider implements Provider {
     public void addConfigData(GitConfig gitConfig) {
         try {
             Properties props = GHUtils.readPropertyFile();
-            if (StringUtil.isEmpty(gitConfig.getUsername())) {
+            if (StringUtils.isEmpty(gitConfig.getUsername())) {
                 gitConfig.setUsername(props.getProperty("login"));
             }
-            if (StringUtil.isEmpty(gitConfig.getPassword())) {
+            if (StringUtils.isEmpty(gitConfig.getPassword())) {
                 gitConfig.setPassword(props.getProperty("password"));
             }
         } catch (IOException e) {

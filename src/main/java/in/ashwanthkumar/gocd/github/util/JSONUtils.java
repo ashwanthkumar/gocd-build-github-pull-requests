@@ -1,10 +1,11 @@
 package in.ashwanthkumar.gocd.github.util;
 
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 public class JSONUtils {
-    public static Object fromJSON(String json) {
-        return new GsonBuilder().create().fromJson(json, Object.class);
+    public static <T> T fromJSON(String json) {
+        return new GsonBuilder().create().fromJson(json, new TypeToken<T>() {}.getType());
     }
 
     public static <T> T fromJSON(String json, Class<T> type) {
