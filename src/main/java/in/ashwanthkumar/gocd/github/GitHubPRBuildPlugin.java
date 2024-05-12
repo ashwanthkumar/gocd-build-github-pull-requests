@@ -11,8 +11,6 @@ import com.tw.go.plugin.GitHelper;
 import com.tw.go.plugin.model.GitConfig;
 import com.tw.go.plugin.model.ModifiedFile;
 import com.tw.go.plugin.model.Revision;
-import com.tw.go.plugin.util.ListUtil;
-import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.settings.scm.PluginConfigurationView;
 import in.ashwanthkumar.gocd.github.util.BranchFilter;
@@ -22,7 +20,7 @@ import in.ashwanthkumar.gocd.github.util.JSONUtils;
 import in.ashwanthkumar.utils.collections.Lists;
 import in.ashwanthkumar.utils.func.Function;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -34,7 +32,7 @@ import static java.util.Arrays.asList;
 
 @Extension
 public class GitHubPRBuildPlugin implements GoPlugin {
-    private static Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
+    private static final Logger LOGGER = Logger.getLoggerFor(GitHubPRBuildPlugin.class);
 
     public static final String EXTENSION_NAME = "scm";
     private static final List<String> goSupportedVersions = asList("1.0");
@@ -174,7 +172,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleSCMValidation(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = fromJSON(goPluginApiRequest.requestBody());
         final Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         final GitConfig gitConfig = getGitConfig(configuration);
 
@@ -189,7 +187,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleSCMCheckConnection(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
 
@@ -207,7 +205,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GoPluginApiResponse handleGetLatestRevision(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
@@ -249,12 +247,12 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     GoPluginApiResponse handleLatestRevisionSince(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = fromJSON(goPluginApiRequest.requestBody(), Map.class);
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         final GitConfig gitConfig = getGitConfig(configuration);
         Map<String, String> scmData = (Map<String, String>) requestBodyMap.get("scm-data");
-        Map<String, String> oldBranchToRevisionMap = (Map<String, String>) fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
-        Map<String, String> lastKnownBranchToRevisionMap = (Map<String, String>) fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
+        Map<String, String> oldBranchToRevisionMap = fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
+        Map<String, String> lastKnownBranchToRevisionMap = fromJSON(scmData.get(BRANCH_TO_REVISION_MAP));
         String flyweightFolder = (String) requestBodyMap.get("flyweight-folder");
         LOGGER.debug(String.format("Fetching latest for: %s", gitConfig.getUrl()));
 
@@ -352,7 +350,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
 
     private Map<String, Object> getRevisionMapForSHA(GitConfig gitConfig, String branch, Revision revision) {
         // patch for building merge commits
-        if (revision.isMergeCommit() && ListUtil.isEmpty(revision.getModifiedFiles())) {
+        if (revision.isMergeCommit() && (revision.getModifiedFiles() == null || revision.getModifiedFiles().isEmpty())) {
             revision.setModifiedFiles(Lists.of(new ModifiedFile("/dev/null", "deleted")));
         }
 
@@ -364,7 +362,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     private GoPluginApiResponse handleCheckout(GoPluginApiRequest goPluginApiRequest) {
-        Map<String, Object> requestBodyMap = (Map<String, Object>) fromJSON(goPluginApiRequest.requestBody());
+        Map<String, Object> requestBodyMap = fromJSON(goPluginApiRequest.requestBody());
         Map<String, String> configuration = keyValuePairs(requestBodyMap, "scm-configuration");
         GitConfig gitConfig = getGitConfig(configuration);
         String destinationFolder = (String) requestBodyMap.get("destination-folder");
@@ -416,7 +414,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
         response.put("timestamp", new SimpleDateFormat(DATE_PATTERN).format(revision.getTimestamp()));
         response.put("revisionComment", revision.getComment());
         List<Map> modifiedFilesMapList = new ArrayList<Map>();
-        if (!ListUtil.isEmpty(revision.getModifiedFiles())) {
+        if (revision.getModifiedFiles() != null && !revision.getModifiedFiles().isEmpty()) {
             for (ModifiedFile modifiedFile : revision.getModifiedFiles()) {
                 Map<String, String> modifiedFileMap = new HashMap<String, String>();
                 modifiedFileMap.put("fileName", modifiedFile.getFileName());
@@ -443,7 +441,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     public void validateUrl(GitConfig gitConfig, Map<String, Object> fieldMap) {
-        if (StringUtil.isEmpty(gitConfig.getUrl())) {
+        if (StringUtils.isEmpty(gitConfig.getUrl())) {
             fieldMap.put("key", "url");
             fieldMap.put("message", "URL is a required field");
         } else if (!provider.isValidURL(gitConfig.getUrl())) {
@@ -453,7 +451,7 @@ public class GitHubPRBuildPlugin implements GoPlugin {
     }
 
     public void checkConnection(GitConfig gitConfig, Map<String, Object> response, List<String> messages) {
-        if (StringUtil.isEmpty(gitConfig.getUrl())) {
+        if (StringUtils.isEmpty(gitConfig.getUrl())) {
             response.put("status", "failure");
             messages.add("URL is empty");
         } else if (!provider.isValidURL(gitConfig.getUrl())) {

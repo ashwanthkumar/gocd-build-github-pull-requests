@@ -1,10 +1,6 @@
 package in.ashwanthkumar.gocd.github.util;
 
-import com.thoughtworks.go.plugin.api.logging.Logger;
-
 public class BranchFilter {
-
-    private static Logger LOGGER = Logger.getLoggerFor(BranchFilter.class);
 
     public static final String NO_BRANCHES = "";
     private final BranchMatcher blacklistedBranches;

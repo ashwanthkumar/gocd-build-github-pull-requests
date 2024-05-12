@@ -2,7 +2,7 @@
 <go-plugin id="gitlab.pr" version="1">
     <about>
         <name>Gitlab Pull Requests Builder</name>
-        <version>${version}</version>
+        <version>${project.version}</version>
         <target-go-version>19.8.0</target-go-version>
         <description>Plugin that polls a Gitlab repository for merge requests and triggers a build for each of them</description>
         <vendor>

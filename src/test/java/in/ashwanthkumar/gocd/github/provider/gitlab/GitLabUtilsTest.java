@@ -3,7 +3,6 @@ package in.ashwanthkumar.gocd.github.provider.gitlab;
 import org.junit.Test;
 
 import static in.ashwanthkumar.gocd.github.provider.gitlab.GitLabUtils.*;
-import static in.ashwanthkumar.gocd.github.provider.gitlab.GitLabUtils.getProjectPathFromUrl;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;

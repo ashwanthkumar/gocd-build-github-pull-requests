@@ -1,7 +1,7 @@
 package in.ashwanthkumar.gocd.github.provider.gitlab;
 
+import in.ashwanthkumar.utils.lang.StringUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;

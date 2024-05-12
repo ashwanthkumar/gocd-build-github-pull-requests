@@ -233,7 +233,7 @@ public class GitHubPRBuildPluginTest {
 
         GoPluginApiResponse response = pluginSpy.handleLatestRevisionSince(request);
 
-        Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
+        Map<String, Map<String, String>> responseBody = JSONUtils.fromJSON(response.responseBody());
         assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("{\"test-1\":\"abcdef01234567891\"}"));
         assertThat(response.responseCode(), is(200));
     }
@@ -255,7 +255,7 @@ public class GitHubPRBuildPluginTest {
 
         GoPluginApiResponse response = pluginSpy.handleLatestRevisionSince(request);
 
-        Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
+        Map<String, Map<String, String>> responseBody = JSONUtils.fromJSON(response.responseBody());
         assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("null"));
         assertThat(response.responseCode(), is(200));
     }
@@ -277,7 +277,7 @@ public class GitHubPRBuildPluginTest {
 
         GoPluginApiResponse response = pluginSpy.handleLatestRevisionSince(request);
 
-        Map<String, Map<String, String>> responseBody = (Map<String, Map<String, String>>)JSONUtils.fromJSON(response.responseBody());
+        Map<String, Map<String, String>> responseBody = JSONUtils.fromJSON(response.responseBody());
         assertThat(responseBody.get("scm-data").get("BRANCH_TO_REVISION_MAP"), is("{\"master\":\"abcdef01234567891\"}"));
         assertThat(response.responseCode(), is(200));
     }
@@ -306,7 +306,7 @@ public class GitHubPRBuildPluginTest {
 
     private void mockGitHelperToReturnBranch(GitFactory gitFactory, final String branch) {
         GitHelper helper = mock(GitHelper.class);
-        when(gitFactory.create(any(GitConfig.class), any(File.class))).thenReturn(helper);
+        when(gitFactory.create(any(), any())).thenReturn(helper);
         when(helper.getBranchToRevisionMap(anyString())).thenReturn(new HashMap<String, String>() {{
             put(branch, "abcdef01234567891");
         }});

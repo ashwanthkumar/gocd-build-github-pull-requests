@@ -3,7 +3,7 @@ package in.ashwanthkumar.gocd.github.provider.github.model;
 import in.ashwanthkumar.gocd.github.provider.github.GitHubProvider;
 
 public class PullRequestStatus {
-    private int id;
+    private long id;
     private String mergeRef;
     // We use this while computing the revisions
     private String lastHead;
@@ -17,7 +17,7 @@ public class PullRequestStatus {
     private String description;
     private String title;
 
-    public PullRequestStatus(int id, String lastHead, String mergedSHA, String prBranch, String toBranch, String url,
+    public PullRequestStatus(long id, String lastHead, String mergedSHA, String prBranch, String toBranch, String url,
                              String author, String authorEmail, String description, String title) {
         this.id = id;
         this.mergeRef = String.format("%s%d", GitHubProvider.REF_PATTERN, getId());
@@ -32,7 +32,7 @@ public class PullRequestStatus {
         this.title = title;
     }
 
-    public PullRequestStatus(int id, String mergeRefPattern, String lastHead, String mergedSHA, String prBranch,
+    public PullRequestStatus(long id, String mergeRefPattern, String lastHead, String mergedSHA, String prBranch,
                              String toBranch, String url, String author, String authorEmail, String description, String title) {
         this.id = id;
         this.mergeRef = String.format("%s%d", mergeRefPattern, getId());
@@ -50,7 +50,7 @@ public class PullRequestStatus {
     private PullRequestStatus() {
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -160,7 +160,7 @@ public class PullRequestStatus {
 
     @Override
     public int hashCode() {
-        int result = id;
+        int result = (int)id;
         result = 31 * result + (mergeRef != null ? mergeRef.hashCode() : 0);
         result = 31 * result + (lastHead != null ? lastHead.hashCode() : 0);
         result = 31 * result + (mergeSHA != null ? mergeSHA.hashCode() : 0);

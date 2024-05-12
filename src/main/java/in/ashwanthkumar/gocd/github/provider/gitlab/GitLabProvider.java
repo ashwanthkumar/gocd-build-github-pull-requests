@@ -1,8 +1,8 @@
 package in.ashwanthkumar.gocd.github.provider.gitlab;
 
 import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
+import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.tw.go.plugin.model.GitConfig;
-import com.tw.go.plugin.util.StringUtil;
 import in.ashwanthkumar.gocd.github.provider.Provider;
 import in.ashwanthkumar.gocd.github.provider.github.model.PullRequestStatus;
 import in.ashwanthkumar.gocd.github.settings.general.DefaultGeneralPluginConfigurationView;
@@ -16,15 +16,13 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Author;
 import org.gitlab4j.api.models.MergeRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 
 public class GitLabProvider implements Provider {
-    private static final Logger LOG = LoggerFactory.getLogger(GitLabProvider.class);
+    private static final Logger LOG = Logger.getLoggerFor(GitLabProvider.class);
     public static final String REF_SPEC = "+refs/merge-requests/*/head:refs/remotes/origin/merge-requests/*";
     public static final String REF_PATTERN = "refs/remotes/origin/merge-requests/";
     private static String LOGIN = "login";
@@ -44,10 +42,10 @@ public class GitLabProvider implements Provider {
     public void addConfigData(GitConfig gitConfig) {
         try {
             Properties props = GitLabUtils.readPropertyFile();
-            if (StringUtil.isEmpty(gitConfig.getUsername())) {
+            if (StringUtils.isEmpty(gitConfig.getUsername())) {
                 gitConfig.setUsername(props.getProperty(LOGIN));
             }
-            if (StringUtil.isEmpty(gitConfig.getPassword())) {
+            if (StringUtils.isEmpty(gitConfig.getPassword())) {
                 gitConfig.setPassword(props.getProperty(ACCESS_TOKEN));
             }
         } catch (Exception e) {
@@ -125,7 +123,7 @@ public class GitLabProvider implements Provider {
         return null;
     }
 
-    private MergeRequest pullRequestFrom(GitConfig gitConfig, int currentPullRequestID) throws GitLabApiException {
+    private MergeRequest pullRequestFrom(GitConfig gitConfig, long currentPullRequestID) throws GitLabApiException {
         return loginWith(gitConfig)
                 .getMergeRequestApi()
                 .getMergeRequest(GitLabUtils.getProjectPathFromUrl(gitConfig.getEffectiveUrl()), currentPullRequestID);
@@ -135,7 +133,7 @@ public class GitLabProvider implements Provider {
         return new Function<MergeRequest, PullRequestStatus>() {
             @Override
             public PullRequestStatus apply(MergeRequest input) {
-                int prID = input.getId();
+                Long prID = input.getId();
                 Author user = input.getAuthor();
                 return new PullRequestStatus(prID, GitLabProvider.REF_PATTERN, input.getSha(), mergedSHA,
                         input.getSourceBranch(), input.getTargetBranch(), input.getWebUrl(), user.getName(),
