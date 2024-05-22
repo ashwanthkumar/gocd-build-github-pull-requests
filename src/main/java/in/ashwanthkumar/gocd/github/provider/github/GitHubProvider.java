@@ -36,7 +36,7 @@ public class GitHubProvider implements Provider {
 
     @Override
     public String getName() {
-        return "Github";
+        return "Github Pull Request";
     }
 
     @Override
